@@ -61,12 +61,36 @@ public class TestThrowController : MonoBehaviour
         spawned.Clear();
     }
 
+    private GUIStyle debugTextStyle;
+
     void OnGUI()
     {
-        GUI.Label(new Rect(10, 10, 500, 120),
+        string text =
             "Space : 3개 레인 동시 투구\n" +
             "1 / 2 / 3 : 기본 / 얼음 / 모래 레인 개별 투구\n" +
             "R : 공 전부 제거\n" +
-            "투구 속도: " + launchSpeed + " m/s");
+            "투구 속도: " + launchSpeed + " m/s";
+
+        Rect rect = new Rect(10, 10, 500, 120);
+
+        if (debugTextStyle == null)
+        {
+            debugTextStyle = new GUIStyle(GUI.skin.label);
+            debugTextStyle.fontStyle = FontStyle.Bold;
+        }
+
+        debugTextStyle.normal.textColor = Color.black;
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                if (dx == 0 && dy == 0) continue;
+                Rect outlineRect = new Rect(rect.x + dx, rect.y + dy, rect.width, rect.height);
+                GUI.Label(outlineRect, text, debugTextStyle);
+            }
+        }
+
+        debugTextStyle.normal.textColor = Color.white;
+        GUI.Label(rect, text, debugTextStyle);
     }
 }
