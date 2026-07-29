@@ -1760,6 +1760,8 @@ MonoBehaviour:
   ballDiameter: 0.22
   startY: 0.14
   startZ: 0.5
+  maxSidewaysSpeed: 2.2
+  speedVariance: 1
 --- !u!4 &1048426062
 Transform:
   m_ObjectHideFlags: 0
