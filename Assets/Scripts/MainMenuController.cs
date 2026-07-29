@@ -56,7 +56,7 @@ public class MainMenuController : MonoBehaviour
             quitButton.onClick.RemoveListener(OnQuitClicked);
     }
 
-    public void OnNewGameClicked()
+public void OnNewGameClicked()
     {
         Debug.Log("[메인메뉴] 새 게임 시작");
 
@@ -65,6 +65,12 @@ public class MainMenuController : MonoBehaviour
 
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.StartNewGame();
+
+        if (BowlingScoreManager.Instance != null)
+            BowlingScoreManager.Instance.StartNewGame();
+
+        if (LaneStageManager.Instance != null)
+            LaneStageManager.Instance.StartNewGame();
 
         if (playScreen != null)
             playScreen.SetActive(true);
