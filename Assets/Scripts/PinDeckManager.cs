@@ -9,6 +9,10 @@ public class PinDeckManager : MonoBehaviour
 {
     public static PinDeckManager Instance { get; private set; }
 
+    // 투구 하나의 판정(핀 집계 + 점수 반영)이 끝났을 때 발생. 다음 투구를 언제 허용해도
+    // 되는지 알아야 하는 입력 컨트롤러(TestThrowController 등)가 구독한다.
+    public event System.Action OnThrowJudged;
+
     [SerializeField] private string mapRootName = "Map";
 
     private int lastKnownDownCount;
@@ -121,20 +125,35 @@ public class PinDeckManager : MonoBehaviour
         int newlyDown = Mathf.Max(0, downCount - lastKnownDownCount);
         lastKnownDownCount = downCount;
 
-        int frameBefore = BowlingScoreManager.Instance != null ? BowlingScoreManager.Instance.CurrentFrame : -1;
+        bool frameChanged = false;
 
+        // BowlingScoreManager (Map 씬 자체 채점) - 있으면 그대로 갱신.
         if (BowlingScoreManager.Instance != null)
+        {
+            int frameBefore = BowlingScoreManager.Instance.CurrentFrame;
             BowlingScoreManager.Instance.RecordRoll(newlyDown);
+            int frameAfter = BowlingScoreManager.Instance.CurrentFrame;
+            frameChanged = frameChanged || (frameAfter != frameBefore);
+        }
 
-        int frameAfter = BowlingScoreManager.Instance != null ? BowlingScoreManager.Instance.CurrentFrame : -1;
+        // StageManager (스테이지 목표 점수 진행) - 있으면 실제 투구 결과를 전달.
+        if (StageManager.Instance != null)
+        {
+            int frameBefore = StageManager.Instance.CurrentFrameNumber;
+            StageManager.Instance.RecordThrow(newlyDown);
+            int frameAfter = StageManager.Instance.CurrentFrameNumber;
+            frameChanged = frameChanged || (frameAfter != frameBefore);
+        }
 
         Debug.Log("[PinDeckManager] 투구 종료: 이번에 " + newlyDown + "개 쓰러짐 (총 " + downCount + "개 다운, 대기 " + elapsed.ToString("F1") + "s)");
         Debug.Log("[PinDeckManager] 핀 상태: " + pinStates);
 
+        OnThrowJudged?.Invoke();
+
         // If the frame is still in progress (no strike, more throws to come
         // in this frame), sweep away the fallen pins so only the standing
         // ones remain for the next throw - like a real pin sweep.
-        if (frameAfter == frameBefore)
+        if (!frameChanged)
         {
             SweepFallenPins(pins);
         }

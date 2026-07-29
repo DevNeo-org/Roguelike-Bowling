@@ -22,6 +22,9 @@ public class TestThrowController : MonoBehaviour
     public float startY = 0.14f;
     public float startZ = 0.5f;
 
+    [Header("Player")]
+    public Animator playerAnimator;
+
     [Header("Randomness")]
     [Tooltip("Max sideways speed (m/s) randomly added, positive or negative.")]
     public float maxSidewaysSpeed = 2.2f;
@@ -45,6 +48,10 @@ public class TestThrowController : MonoBehaviour
     private readonly List<GameObject> spawned = new List<GameObject>();
     private readonly List<GameObject> spawnedObstacles = new List<GameObject>();
 
+    // 이전 투구가 판정(핀 집계 + 점수 반영)될 때까지 다음 투구를 막는다.
+    // PinDeckManager가 있는 씬(실제 핀이 있는 씬)에서만 의미가 있고, 없는 씬에서는 항상 던질 수 있다.
+    private bool waitingForThrow;
+
     private static readonly Dictionary<string, float> laneX = new Dictionary<string, float>
     {
         { "Basic", -3f },
@@ -54,18 +61,42 @@ public class TestThrowController : MonoBehaviour
         { "Trampoline", 9f }
     };
 
+    void Start()
+    {
+        if (PinDeckManager.Instance != null)
+            PinDeckManager.Instance.OnThrowJudged += HandleThrowJudged;
+    }
+
+    void OnDestroy()
+    {
+        if (PinDeckManager.Instance != null)
+            PinDeckManager.Instance.OnThrowJudged -= HandleThrowJudged;
+    }
+
     void Update()
     {
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        if (kb.spaceKey.wasPressedThisFrame) Launch();
+        if (kb.spaceKey.wasPressedThisFrame && !waitingForThrow) Launch();
         if (kb.rKey.wasPressedThisFrame) ClearBalls();
         if (kb.eKey.wasPressedThisFrame) SpawnRandomObstacles();
     }
 
+    private void HandleThrowJudged()
+    {
+        waitingForThrow = false;
+    }
+
     void Launch()
     {
+        // 핀이 있는 씬에서는 이번 투구가 판정될 때까지 다음 투구를 막는다.
+        if (PinDeckManager.Instance != null)
+            waitingForThrow = true;
+
+        if (playerAnimator != null)
+            playerAnimator.SetTrigger("Throw");
+
         string activeLane = LaneStageManager.Instance != null ? LaneStageManager.Instance.ActiveLaneKey : "Basic";
         float x = laneX.ContainsKey(activeLane) ? laneX[activeLane] : -3f;
 
@@ -104,6 +135,9 @@ public class TestThrowController : MonoBehaviour
             if (go != null) Destroy(go);
         }
         spawned.Clear();
+
+        // 공이 어딘가에 끼어 판정이 영영 안 오는 경우를 대비한 비상 탈출구.
+        waitingForThrow = false;
     }
 
     void SpawnRandomObstacles()
@@ -165,8 +199,10 @@ public class TestThrowController : MonoBehaviour
 
     void OnGUI()
     {
+        string spaceLine = waitingForThrow ? "Space : (이전 투구 판정 대기 중...)" : "Space : 공 투구 (현재 레인, 랜덤 방향)";
+
         GUI.Label(new Rect(10, 10, 500, 100),
-            "Space : 공 투구 (현재 레인, 랜덤 방향)\n" +
+            spaceLine + "\n" +
             "R : 남은 테스트 공 제거\n" +
             "E : 현재 레인에 장애물 랜덤 스폰\n" +
             "투구 속도: " + launchSpeed + " m/s");

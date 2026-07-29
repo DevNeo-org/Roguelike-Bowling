@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class StageManager : MonoBehaviour
 {
+    public static StageManager Instance { get; private set; }
+
     [Header("Balance")]
     [SerializeField] private int baseTargetScore = 40;
     [SerializeField] private int targetScoreIncreasePerStage = 10;
@@ -34,7 +35,6 @@ public class StageManager : MonoBehaviour
     [SerializeField] private GameObject shopToggleButton;
     [SerializeField] private GameObject mainMenuScreen;
     [SerializeField] private GameObject playScreen;
-    [SerializeField] private Animator playerAnimator;
 
     private int currentStage = 1;
     private int currentFrame = 1;
@@ -42,12 +42,22 @@ public class StageManager : MonoBehaviour
     private int targetScore;
     private bool isPlaying;
 
+    public int CurrentFrameNumber => currentFrame;
+
     // 프레임별로 던진 공의 핀 개수를 순서대로 기록 (10프레임만 보너스 투구로 최대 3개까지 가능).
     private List<int>[] frameThrows;
     private int pinsStanding;
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
         if (nextStageButton != null)
             nextStageButton.onClick.AddListener(OnNextStageClicked);
 
@@ -68,15 +78,6 @@ public class StageManager : MonoBehaviour
 
         if (failedMainMenuButton != null)
             failedMainMenuButton.onClick.RemoveListener(OnFailedMainMenuClicked);
-    }
-
-    private void Update()
-    {
-        if (!isPlaying)
-            return;
-
-        if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
-            Bowl();
     }
 
     public void StartFromStageOne()
@@ -118,8 +119,11 @@ public class StageManager : MonoBehaviour
         if (throwSlot3Tenth != null)
             throwSlot3Tenth.text = "";
 
+        if (PinDeckManager.Instance != null)
+            PinDeckManager.Instance.ResetPins();
+
         if (resultText != null)
-            resultText.text = "F 키를 눌러 투구하세요.";
+            resultText.text = "Space 키로 공을 던져 투구하세요.";
 
         if (stagePlayUI != null)
             stagePlayUI.SetActive(true);
@@ -138,24 +142,37 @@ public class StageManager : MonoBehaviour
         Debug.Log($"[스테이지] {currentStage}스테이지 시작 (목표 점수: {targetScore})");
     }
 
-    // F 키 한 번 = 투구 한 번. 10프레임을 제외하면 스트라이크가 아닐 때만 두 번째 투구가 진행되고,
+    // 실제 물리 투구(Map 씬 방식) 한 번의 결과를 기록한다. pinsKnocked는 이번 투구에서
+    // 실제로 새로 쓰러진 핀 개수(PinDeckManager가 계산)이며, PinDeckManager가 공이 멈출 때마다 호출한다.
+    // 10프레임을 제외하면 스트라이크가 아닐 때만 두 번째 투구가 진행되고,
     // 10프레임은 전통적인 볼링 규칙대로 스트라이크/스페어 시 보너스 투구(최대 3구)가 추가된다.
-    private void Bowl()
+    public void RecordThrow(int pinsKnocked)
     {
-        if (currentFrame > FramesPerStage)
+        if (!isPlaying || currentFrame > FramesPerStage)
             return;
-
-        if (playerAnimator != null)
-            playerAnimator.SetTrigger("Throw");
 
         int frameIdx = currentFrame - 1;
         bool isTenth = currentFrame == FramesPerStage;
         int pinsBeforeThisThrow = pinsStanding;
-        int pins = Random.Range(0, pinsStanding + 1);
+        int pins = Mathf.Clamp(pinsKnocked, 0, pinsBeforeThisThrow);
+
+        // 스트라이크는 "이 투구가 프레임/랙의 첫 투구"일 때만 성립한다.
+        // (예: 1구가 거터라 핀이 그대로 10개 남아있는 상태에서 2구로 그 10개를 마저 넘어뜨리는 것은
+        //  스트라이크가 아니라 스페어다 - 10프레임의 2/3구는 직전 투구가 스트라이크/스페어였을 때만 새 랙이다.)
+        int throwsSoFarInFrame = frameThrows[frameIdx].Count;
+        bool isFreshRack;
+        if (throwsSoFarInFrame == 0)
+            isFreshRack = true;
+        else if (isTenth && throwsSoFarInFrame == 1)
+            isFreshRack = frameThrows[frameIdx][0] == 10;
+        else if (isTenth && throwsSoFarInFrame == 2)
+            isFreshRack = true; // 3구가 존재한다는 것 자체가 이미 스트라이크/스페어를 의미
+        else
+            isFreshRack = false;
 
         frameThrows[frameIdx].Add(pins);
 
-        string symbol = pins == 10 ? "X"
+        string symbol = pins == 10 && isFreshRack ? "X"
             : pins == 0 ? "-"
             : (pins == pinsBeforeThisThrow ? "/" : pins.ToString());
 
@@ -182,7 +199,9 @@ public class StageManager : MonoBehaviour
             frameComplete = HandleTenthFrameThrow(frameIdx, pins);
         }
 
-        string throwLabel = pins == 10 ? "스트라이크" : pins == 0 ? "거터" : $"{pins}점";
+        string throwLabel = pins == 10 && isFreshRack ? "스트라이크"
+            : pins == 0 ? "거터"
+            : (pins == pinsBeforeThisThrow ? "스페어" : $"{pins}점");
 
         if (resultText != null)
             resultText.text = $"{currentFrame}프레임 {throwSlotIndex}투: {throwLabel}";
@@ -251,6 +270,10 @@ public class StageManager : MonoBehaviour
 
         currentFrame++;
         pinsStanding = 10;
+
+        if (PinDeckManager.Instance != null)
+            PinDeckManager.Instance.ResetPins();
+
         RefreshInfoText();
     }
 
