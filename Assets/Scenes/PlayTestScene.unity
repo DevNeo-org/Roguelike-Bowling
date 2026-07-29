@@ -541,12 +541,16 @@ PrefabInstance:
     m_TransformParent: {fileID: 334650458}
     m_Modifications:
     - target: {fileID: 6270170099255660792, guid: e6b25031fcec4204a9fad6a2215986db, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 5.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6270170099255660792, guid: e6b25031fcec4204a9fad6a2215986db, type: 3}
       propertyPath: m_LocalPosition.x
       value: -3
       objectReference: {fileID: 0}
     - target: {fileID: 6270170099255660792, guid: e6b25031fcec4204a9fad6a2215986db, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.97
       objectReference: {fileID: 0}
     - target: {fileID: 6270170099255660792, guid: e6b25031fcec4204a9fad6a2215986db, type: 3}
       propertyPath: m_LocalPosition.z
@@ -781,8 +785,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ThrowInputHandler
   sampleThreshold: 8
   maxPoints: 80
+  minSpeedPx: 100
+  maxSpeedPx: 3000
   recentPointCount: 10
-  curvatureScale: 55.4
+  curvatureScale: 30
   arrowLength: 100
   trajectoryColor: {r: 0, g: 1, b: 1, a: 0.8}
   directionColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
@@ -875,7 +881,7 @@ Transform:
   m_GameObject: {fileID: 1835537057}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.108, y: 0.93859, z: -1.326}
+  m_LocalPosition: {x: -3.39, y: 0.93859, z: -1.326}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -893,8 +899,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ba7364d64868d741b39a711477d5a5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallLauncher
-  launchSpeed: 5
+  minLaunchSpeed: 1
+  maxLaunchSpeed: 6
   spinScale: 15
+  armRadius: 1.5
+  shoulderOffset: {x: 0, y: 0.5, z: 0}
+  throwAngleThreshold: 130
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
