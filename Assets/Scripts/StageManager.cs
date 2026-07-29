@@ -22,7 +22,6 @@ public class StageManager : MonoBehaviour
     [Header("Maintenance UI")]
     [SerializeField] private GameObject maintenanceUI;
     [SerializeField] private TextMeshProUGUI maintenanceSummaryText;
-    [SerializeField] private Button[] skillSlotButtons;
     [SerializeField] private Button nextStageButton;
 
     [Header("Failed UI")]
@@ -35,6 +34,7 @@ public class StageManager : MonoBehaviour
     [SerializeField] private GameObject shopToggleButton;
     [SerializeField] private GameObject mainMenuScreen;
     [SerializeField] private GameObject playScreen;
+    [SerializeField] private Animator playerAnimator;
 
     private int currentStage = 1;
     private int currentFrame = 1;
@@ -51,15 +51,6 @@ public class StageManager : MonoBehaviour
         if (nextStageButton != null)
             nextStageButton.onClick.AddListener(OnNextStageClicked);
 
-        if (skillSlotButtons != null)
-        {
-            foreach (var button in skillSlotButtons)
-            {
-                if (button != null)
-                    button.onClick.AddListener(OnSkillClicked);
-            }
-        }
-
         if (retryButton != null)
             retryButton.onClick.AddListener(OnRetryClicked);
 
@@ -71,15 +62,6 @@ public class StageManager : MonoBehaviour
     {
         if (nextStageButton != null)
             nextStageButton.onClick.RemoveListener(OnNextStageClicked);
-
-        if (skillSlotButtons != null)
-        {
-            foreach (var button in skillSlotButtons)
-            {
-                if (button != null)
-                    button.onClick.RemoveListener(OnSkillClicked);
-            }
-        }
 
         if (retryButton != null)
             retryButton.onClick.RemoveListener(OnRetryClicked);
@@ -162,6 +144,9 @@ public class StageManager : MonoBehaviour
     {
         if (currentFrame > FramesPerStage)
             return;
+
+        if (playerAnimator != null)
+            playerAnimator.SetTrigger("Throw");
 
         int frameIdx = currentFrame - 1;
         bool isTenth = currentFrame == FramesPerStage;
@@ -389,12 +374,6 @@ public class StageManager : MonoBehaviour
             maintenanceUI.SetActive(false);
 
         StartStage(currentStage + 1);
-    }
-
-    public void OnSkillClicked()
-    {
-        // TODO: 스킬 시스템은 아직 구현되지 않았습니다.
-        Debug.Log("[정비 타임] 스킬 획득 (스킬 시스템 미구현)");
     }
 
     public void OnRetryClicked()
