@@ -75,6 +75,9 @@ public void OnNewGameClicked()
         if (LaneStageManager.Instance != null)
             LaneStageManager.Instance.StartNewGame();
 
+        if (SkillManager.Instance != null)
+            SkillManager.Instance.StartNewGame();
+
         if (playScreen != null)
             playScreen.SetActive(true);
 
@@ -99,6 +102,10 @@ public void OnNewGameClicked()
 
         if (stageManager != null)
             stageManager.StartFromStageOne();
+
+        // 스킬은 아직 저장/불러오기 대상이 아니므로 항상 빈 상태로 시작한다.
+        if (SkillManager.Instance != null)
+            SkillManager.Instance.StartNewGame();
 
         if (playScreen != null)
             playScreen.SetActive(true);

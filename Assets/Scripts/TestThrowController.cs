@@ -22,8 +22,14 @@ public class TestThrowController : MonoBehaviour
     public float startY = 0.14f;
     public float startZ = 0.5f;
 
+    [Header("Ball Prefab")]
+    [Tooltip("지정하면 이 프리팹을 그대로 생성해서 던진다(메시/재질/물리 재질이 프리팹에 이미 세팅되어 있음). 비워두면 예전처럼 기본 구체를 즉석에서 만든다.")]
+    public GameObject ballPrefab;
+
     [Header("Player")]
     public Animator playerAnimator;
+    [Tooltip("Space를 누른 시점부터 실제 공이 손을 떠나는 시점까지의 지연(초). Player_Throw.anim에서 팔이 가장 앞으로 뻗는 시점(약 0.85s/1.2s)에 맞춰져 있다.")]
+    public float throwReleaseDelay = 0.85f;
 
     [Header("Randomness")]
     [Tooltip("Max sideways speed (m/s) randomly added, positive or negative.")]
@@ -95,21 +101,55 @@ public class TestThrowController : MonoBehaviour
             waitingForThrow = true;
 
         if (playerAnimator != null)
+        {
             playerAnimator.SetTrigger("Throw");
+            // 애니메이션의 팔 스윙과 자연스럽게 이어지도록, 공은 애니메이션이 시작된 뒤
+            // 실제로 손을 놓는 타이밍(throwReleaseDelay)에 맞춰 지연 발사한다.
+            StartCoroutine(SpawnBallAfterDelay(throwReleaseDelay));
+        }
+        else
+        {
+            SpawnBall();
+        }
+    }
 
+    private System.Collections.IEnumerator SpawnBallAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        SpawnBall();
+    }
+
+    void SpawnBall()
+    {
         string activeLane = LaneStageManager.Instance != null ? LaneStageManager.Instance.ActiveLaneKey : "Basic";
         float x = laneX.ContainsKey(activeLane) ? laneX[activeLane] : -3f;
 
-        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        GameObject go;
+        Rigidbody rb;
+
+        if (ballPrefab != null)
+        {
+            // 프리팹에 메시/재질/물리 재질/질량/충돌 감지 모드가 이미 세팅되어 있으므로 그대로 생성만 한다.
+            go = Instantiate(ballPrefab, new Vector3(x, startY, startZ), Quaternion.identity);
+            rb = go.GetComponent<Rigidbody>();
+            if (rb == null)
+                rb = go.AddComponent<Rigidbody>();
+        }
+        else
+        {
+            go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.transform.position = new Vector3(x, startY, startZ);
+            go.transform.localScale = Vector3.one * ballDiameter;
+            SetColor(go, ballColor);
+
+            rb = go.AddComponent<Rigidbody>();
+            rb.mass = ballMass;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+        }
+
         go.name = "TestBall_" + activeLane;
         go.tag = "Ball";
-        go.transform.position = new Vector3(x, startY, startZ);
-        go.transform.localScale = Vector3.one * ballDiameter;
-
-        SetColor(go, ballColor);
-
-        Rigidbody rb = go.AddComponent<Rigidbody>();
-        rb.mass = ballMass;
 
         float sideways = Random.Range(-maxSidewaysSpeed, maxSidewaysSpeed);
         float forwardSpeed = launchSpeed + Random.Range(-speedVariance, speedVariance);
@@ -118,10 +158,8 @@ public class TestThrowController : MonoBehaviour
         // A bit of random spin so the ball can curve like a real hook shot.
         rb.angularVelocity = new Vector3(0f, Random.Range(-3f, 3f), 0f);
 
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-
-        go.AddComponent<BallFinishWatcher>();
+        if (go.GetComponent<BallFinishWatcher>() == null)
+            go.AddComponent<BallFinishWatcher>();
 
         spawned.Add(go);
 

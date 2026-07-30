@@ -7,6 +7,7 @@ public class SkillEntry
     public string name;
     public string type;
     public string description;
+    public int price;
 }
 
 [System.Serializable]
@@ -56,6 +57,23 @@ public static class GameDataManager
         }
 
         return cachedShopItems;
+    }
+
+    // source에서 겹치지 않게 count개를 무작위로 뽑는다 (SkillPanelController의 무료 픽, ShopAreaController의 장신구 리롤이 공유).
+    public static List<SkillEntry> PickRandomDistinct(List<SkillEntry> source, int count)
+    {
+        var pool = new List<SkillEntry>(source);
+        var result = new List<SkillEntry>();
+        int pickCount = Mathf.Min(count, pool.Count);
+
+        for (int i = 0; i < pickCount; i++)
+        {
+            int index = Random.Range(0, pool.Count);
+            result.Add(pool[index]);
+            pool.RemoveAt(index);
+        }
+
+        return result;
     }
 
     private static T LoadJson<T>(string resourcePath) where T : class
