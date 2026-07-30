@@ -1,0 +1,32 @@
+{
+  "skills": [
+    { "name": "지진", "type": "발동형", "description": "투구 이후 플레이어블 캐릭터가 확률적으로 넘어져 핀에 데미지를 준다" },
+    { "name": "스탠드", "type": "발동형", "description": "누군가 나타나서 대신 던져준다" },
+    { "name": "봅슬레이", "type": "발동형", "description": "투구 시 큰 썰매가 나와 빠른 속도로 날아간다" },
+    { "name": "더블", "type": "발동형", "description": "투구 시 공 하나가 같이 날아간다" },
+    { "name": "시한폭탄", "type": "발동형", "description": "투구 이후 일정 시간이 지난 뒤 터진다" },
+    { "name": "태풍", "type": "발동형", "description": "바람의 힘으로 주변 핀에 데미지를 준다" },
+    { "name": "오류", "type": "발동형", "description": "핀이 하나 남았을 때 일정 확률로 쓰러진다" },
+    { "name": "벽생성", "type": "발동형", "description": "거터 자리에 벽이 생김(일정 횟수 이후에는 사라진다)" },
+    { "name": "비", "type": "발동형", "description": "레인에 비를 내려 더 미끄럽게 한다" },
+    { "name": "리무브", "type": "발동형", "description": "낮은 확률로 핀 하나를 즉시 제거" },
+    { "name": "전류 방출", "type": "발동형", "description": "볼이 핀 중앙에 도착하면 확률적으로 전류를 방출함" },
+    { "name": "거구", "type": "상시형", "description": "플레이어 몸무게 증가(지진에 영향)" },
+    { "name": "불안정한 발", "type": "상시형", "description": "넘어질 확률 증가 및 어드벤티지" },
+    { "name": "스킬 복제", "type": "상시형", "description": "복제된 공도 스킬 발동" },
+    { "name": "한번더", "type": "상시형", "description": "공이 하나 더 추가 됩니다" },
+    { "name": "쌍소멸", "type": "상시형", "description": "공끼리 부딪히면 없어지는 대신에 큰 폭발 발생" },
+    { "name": "집속탄", "type": "상시형", "description": "폭발 후 작은 폭탄 여러 개 생성" },
+    { "name": "탄성벽", "type": "상시형", "description": "벽 반사 횟수 증가" },
+    { "name": "핀볼", "type": "상시형", "description": "벽에 튕길때마다 데미지 증가" },
+    { "name": "드리프트", "type": "상시형", "description": "봅슬레이가 드리프트를 한다" },
+    { "name": "여진", "type": "상시형", "description": "지진 발생 후 1초뒤 한 번 더 지진이 발생" },
+    { "name": "해일", "type": "상시형", "description": "해일로 핀을 넘어뜨린다" },
+    { "name": "삼각편대", "type": "상시형", "description": "공들이 서로 일정 간격을 유지하며 날아간다" },
+    { "name": "재시도", "type": "상시형", "description": "오류 발동 실패 시 한 번 더 판정" },
+    { "name": "해킹", "type": "상시형", "description": "오류 발동 확률 증가" },
+    { "name": "압축", "type": "상시형", "description": "공 크기가 작아지고 속도가 증가" },
+    { "name": "거대화", "type": "상시형", "description": "공 크기가 커짐" },
+    { "name": "철핀", "type": "상시형", "description": "모든 핀들의 재질이 철로 바뀜" }
+  ]
+}

@@ -1,8 +1,9 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class ShopItem : MonoBehaviour
+public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private string itemName = "아이템";
     [TextArea]
@@ -10,9 +11,12 @@ public class ShopItem : MonoBehaviour
     [SerializeField] private int price = 100;
 
     [SerializeField] private TextMeshProUGUI nameText;
-    [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI priceText;
     [SerializeField] private Button buyButton;
+    [SerializeField] private Image iconImage;
+
+    private TextMeshProUGUI descriptionBar;
+    private string descriptionBarIdleText = "";
 
     private void Awake()
     {
@@ -23,6 +27,37 @@ public class ShopItem : MonoBehaviour
     private void OnEnable()
     {
         RefreshDisplay();
+    }
+
+    public void Configure(string newName, string newDescription, int newPrice, Sprite newIcon)
+    {
+        itemName = newName;
+        description = newDescription;
+        price = newPrice;
+
+        if (iconImage != null)
+            iconImage.sprite = newIcon;
+
+        RefreshDisplay();
+    }
+
+    // 상점 그리드의 공용 설명 표시줄을 등록한다. 마우스 오버 시 해당 표시줄에 설명을 띄운다.
+    public void SetDescriptionBar(TextMeshProUGUI bar, string idleText)
+    {
+        descriptionBar = bar;
+        descriptionBarIdleText = idleText;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (descriptionBar != null)
+            descriptionBar.text = $"{itemName}: {description}";
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (descriptionBar != null)
+            descriptionBar.text = descriptionBarIdleText;
     }
 
     private void OnDestroy()
@@ -40,9 +75,6 @@ public class ShopItem : MonoBehaviour
     {
         if (nameText != null)
             nameText.text = itemName;
-
-        if (descriptionText != null)
-            descriptionText.text = description;
 
         bool owned = IsOwned();
 

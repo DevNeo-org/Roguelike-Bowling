@@ -11,6 +11,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private GameObject playScreen;
     [SerializeField] private GameObject settingsScreen;
     [SerializeField] private GameObject collectionScreen;
+    [SerializeField] private StageManager stageManager;
 
     private void Awake()
     {
@@ -66,6 +67,8 @@ public void OnNewGameClicked()
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.StartNewGame();
 
+        if (stageManager != null)
+            stageManager.StartFromStageOne();
         if (BowlingScoreManager.Instance != null)
             BowlingScoreManager.Instance.StartNewGame();
 
@@ -93,6 +96,9 @@ public void OnNewGameClicked()
 
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.LoadFromSave();
+
+        if (stageManager != null)
+            stageManager.StartFromStageOne();
 
         if (playScreen != null)
             playScreen.SetActive(true);

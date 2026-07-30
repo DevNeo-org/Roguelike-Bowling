@@ -1,0 +1,13 @@
+{
+  "items": [
+    { "name": "볼링화", "description": "신고 투구하면 넘어질 확률이 줄어듭니다.", "price": 150, "icon": "icon_shoes" },
+    { "name": "장갑(아대)", "description": "투구 시 손목 안정성을 높여줍니다.", "price": 120, "icon": "icon_glove" },
+    { "name": "볼링공", "description": "공의 무게(파운드)를 높여줍니다.", "price": 200, "icon": "icon_ball" },
+    { "name": "기름 제거 수건", "description": "볼링공에 묻은 기름기를 제거합니다.", "price": 50, "icon": "icon_towel" },
+    { "name": "상점 할인", "description": "상점가를 할인해 줍니다.", "price": 300, "icon": "icon_discount" },
+    { "name": "근력", "description": "더 높은 파운드로, 더 빠르게 던질 수 있습니다.", "price": 220, "icon": "icon_strength" },
+    { "name": "투구 증가", "description": "1프레임 안에 투구 수가 1개 증가합니다.", "price": 400, "icon": "icon_throw" },
+    { "name": "스페어 처리", "description": "n번째 프레임을 항상 스페어로 처리(점수 2배).", "price": 350, "icon": "icon_spare" },
+    { "name": "보너스 핀", "description": "보너스 핀이 더 많이 등장합니다.", "price": 180, "icon": "icon_bonuspin" }
+  ]
+}
