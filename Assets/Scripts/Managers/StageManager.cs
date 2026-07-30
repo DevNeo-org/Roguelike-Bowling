@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class StageManager : MonoBehaviour
@@ -66,6 +67,22 @@ public class StageManager : MonoBehaviour
 
         if (failedMainMenuButton != null)
             failedMainMenuButton.onClick.AddListener(OnFailedMainMenuClicked);
+    }
+
+    // 디버그 치트키: K를 누르면 현재 스테이지를 즉시 클리어 상태로 만들고 정비 화면으로 넘어간다.
+    private void Update()
+    {
+        if (!isPlaying)
+            return;
+
+        if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame)
+        {
+            Debug.Log($"[치트] K키 입력: {currentStage}스테이지 강제 클리어");
+            stageScore = Mathf.Max(stageScore, targetScore);
+            RefreshInfoText();
+            isPlaying = false;
+            EnterMaintenance();
+        }
     }
 
     private void OnDestroy()
