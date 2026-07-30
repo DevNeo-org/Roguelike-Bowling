@@ -16,11 +16,17 @@ public class ThrowInputHandler : MonoBehaviour
     [SerializeField] private float sampleThreshold = 8f;
     [SerializeField] private int maxPoints = 80;
 
+    [Header("Speed")]
+    [Tooltip("이 픽셀/초 이하면 최소 속도로 취급")]
+    [SerializeField] private float minSpeedPx = 200f;
+    [Tooltip("이 픽셀/초 이상이면 최대 속도로 취급")]
+    [SerializeField] private float maxSpeedPx = 1500f;
+
     [Header("Direction — Plan A")]
     [Tooltip("릴리즈 직전 몇 개의 점으로 기본 방향을 구할지")]
     [SerializeField] private int recentPointCount = 10;
-    [Tooltip("곡률 → 각도 오프셋 배율 (도 단위)")]
-    [SerializeField, Range(0f, 90f)] private float curvatureScale = 30f;
+    [Tooltip("곡률 → 각도 오프셋 배율 (도 단위). 작을수록 초기 방향이 직선에 가까워짐")]
+    [SerializeField, Range(0f, 30f)] private float curvatureScale = 7f;
 
     [Header("Visualization")]
     [SerializeField] private float arrowLength = 100f;
@@ -29,6 +35,9 @@ public class ThrowInputHandler : MonoBehaviour
 
     /// <summary>릴리즈 후 true. 새 드래그를 시작하면 false로 초기화.</summary>
     public bool HasResult { get; private set; }
+
+    /// <summary>LMB를 누르고 있는 동안 true.</summary>
+    public bool IsDragging => _isDragging;
 
     /// <summary>
     /// 정규화된 투구 방향 (스크린 좌표 기준, Y축 위 = 양수).
@@ -46,18 +55,38 @@ public class ThrowInputHandler : MonoBehaviour
     /// </summary>
     public float CurvatureValue { get; private set; }
 
+    /// <summary>
+    /// 릴리즈 시 마우스 이동 속도를 minSpeedPx~maxSpeedPx 범위로 정규화한 값 [0, 1].
+    /// BallLauncher가 발사 속도 스케일링에 사용.
+    /// </summary>
+    public float ThrowSpeedNormalized { get; private set; }
+
+    /// <summary>
+    /// 드래그 중 마우스가 아래로 내려간 적 있으면 true (백스윙 판정).
+    /// BallLauncher가 밀어내기/던지기 분기에 사용.
+    /// </summary>
+    public bool HasMovedBackward { get; private set; }
+
+    [Header("Throw Style Detection")]
+    [Tooltip("이 픽셀 이상 아래로 내려가면 백스윙으로 판정")]
+    [SerializeField] private float backswingThresholdPx = 10f;
+
     private readonly List<Vector2> _points = new List<Vector2>();
+    private readonly List<float> _timestamps = new List<float>();
     private bool _isDragging;
 
     /// <summary>공 삭제 시 BallSpawner가 호출 — 드래그 궤적·결과 전부 초기화.</summary>
     public void Reset()
     {
         _points.Clear();
+        _timestamps.Clear();
         _isDragging = false;
         HasResult = false;
         ThrowDirectionScreen = Vector2.zero;
         ThrowAngleDeg = 0f;
         CurvatureValue = 0f;
+        ThrowSpeedNormalized = 0f;
+        HasMovedBackward = false;
     }
     private static Texture2D _lineTex;
     private GUIStyle _labelStyle;
@@ -78,36 +107,59 @@ public class ThrowInputHandler : MonoBehaviour
     private void BeginDrag(Vector2 pos)
     {
         _points.Clear();
+        _timestamps.Clear();
         _points.Add(pos);
+        _timestamps.Add(Time.unscaledTime);
         _isDragging = true;
         HasResult = false;
+        HasMovedBackward = false;
     }
 
     private void ContinueDrag(Vector2 pos)
     {
+        // 백스윙 감지: sampleThreshold 무관하게 매 프레임 체크
+        float deltaY = pos.y - _points[_points.Count - 1].y;
+        if (deltaY < -backswingThresholdPx)
+            HasMovedBackward = true;
+
         if (Vector2.Distance(pos, _points[_points.Count - 1]) < sampleThreshold)
             return;
 
         _points.Add(pos);
+        _timestamps.Add(Time.unscaledTime);
 
         if (_points.Count > maxPoints)
+        {
             _points.RemoveAt(0);
+            _timestamps.RemoveAt(0);
+        }
     }
 
     private void EndDrag(Vector2 pos)
     {
-        ContinueDrag(pos);
+        // 릴리즈 순간은 백스윙 감지 없이 포인트만 추가
+        if (Vector2.Distance(pos, _points[_points.Count - 1]) >= sampleThreshold)
+        {
+            _points.Add(pos);
+            _timestamps.Add(Time.unscaledTime);
+            if (_points.Count > maxPoints)
+            {
+                _points.RemoveAt(0);
+                _timestamps.RemoveAt(0);
+            }
+        }
         _isDragging = false;
 
         if (_points.Count < 2) return;
 
         CurvatureValue = 0f;  // ComputeThrowAngle 내부에서 갱신됨
         (ThrowDirectionScreen, ThrowAngleDeg) = ComputeThrowAngle();
+        ThrowSpeedNormalized = ComputeThrowSpeedNormalized();
         HasResult = true;
     }
 
     /// <summary>
-    /// Plan A: 최근 N점 평균 방향 + 릴리즈 직전 3점 부호 곡률 오프셋
+    /// 최근 N점 평균 방향 + 전체 궤적 평균 곡률 오프셋
     /// </summary>
     private (Vector2 dir, float angleDeg) ComputeThrowAngle()
     {
@@ -123,24 +175,28 @@ public class ThrowInputHandler : MonoBehaviour
         sum.Normalize();
         float baseAngle = Mathf.Atan2(sum.y, sum.x) * Mathf.Rad2Deg;
 
-        // 곡률 보정: 마지막 3점의 부호 있는 곡률 프록시
-        // cross > 0 → 반시계(왼쪽으로 휨) → 각도 증가
-        // cross < 0 → 시계(오른쪽으로 휨) → 각도 감소
+        // 곡률 보정: 전체 궤적의 연속 3점마다 부호 있는 곡률을 구해 평균냄
         float curvatureOffset = 0f;
         if (_points.Count >= 3)
         {
-            Vector2 p0 = _points[_points.Count - 3];
-            Vector2 p1 = _points[_points.Count - 2];
-            Vector2 p2 = _points[_points.Count - 1];
-
-            Vector2 a = p1 - p0;
-            Vector2 b = p2 - p1;
-            float cross = a.x * b.y - a.y * b.x;   // 2D 외적 (부호 있음)
-            float denom = a.magnitude * b.magnitude;
-
-            if (denom > 0.0001f)
+            float crossSum = 0f;
+            int count = 0;
+            for (int i = 1; i < _points.Count - 1; i++)
             {
-                CurvatureValue = cross / denom;          // 원시 곡률 프록시 [-1, 1] 저장
+                Vector2 a = _points[i]     - _points[i - 1];
+                Vector2 b = _points[i + 1] - _points[i];
+                float denom = a.magnitude * b.magnitude;
+                if (denom > 0.0001f)
+                {
+                    float cross = a.x * b.y - a.y * b.x;
+                    crossSum += cross / denom;   // 정규화된 곡률 [-1, 1]
+                    count++;
+                }
+            }
+
+            if (count > 0)
+            {
+                CurvatureValue = crossSum / count;       // 전체 평균 곡률
                 curvatureOffset = CurvatureValue * curvatureScale;
             }
         }
@@ -152,6 +208,23 @@ public class ThrowInputHandler : MonoBehaviour
         );
 
         return (dir, finalAngle);
+    }
+
+    /// <summary>
+    /// 최근 recentPointCount 구간의 픽셀/초 평균 속도를 [0,1]로 정규화해 반환.
+    /// </summary>
+    private float ComputeThrowSpeedNormalized()
+    {
+        int start = Mathf.Max(0, _points.Count - recentPointCount - 1);
+        float totalDist = 0f;
+        for (int i = start; i < _points.Count - 1; i++)
+            totalDist += Vector2.Distance(_points[i], _points[i + 1]);
+
+        float timeSpan = _timestamps[_timestamps.Count - 1] - _timestamps[start];
+        if (timeSpan < 0.0001f) return 0f;
+
+        float rawSpeed = totalDist / timeSpan; // px/s
+        return Mathf.Clamp01(Mathf.InverseLerp(minSpeedPx, maxSpeedPx, rawSpeed));
     }
 
     // ────────────────────────────────────────────────────────────
@@ -194,8 +267,8 @@ public class ThrowInputHandler : MonoBehaviour
 
             _labelStyle.normal.textColor = directionColor;
             GUI.Label(
-                new Rect(10, Screen.height - 50, 500, 30),
-                $"투구 각도: {ThrowAngleDeg:F1}°  |  방향: ({ThrowDirectionScreen.x:F2}, {ThrowDirectionScreen.y:F2})",
+                new Rect(10, Screen.height - 50, 700, 30),
+                $"투구 각도: {ThrowAngleDeg:F1}°  |  방향: ({ThrowDirectionScreen.x:F2}, {ThrowDirectionScreen.y:F2})  |  속도: {ThrowSpeedNormalized:F2}",
                 _labelStyle);
         }
 
