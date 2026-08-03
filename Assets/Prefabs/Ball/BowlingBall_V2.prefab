@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 7358024125805188454}
   - component: {fileID: 8926578311082949823}
   - component: {fileID: 5353932680347612450}
+  - component: {fileID: 5357005047908765449}
+  - component: {fileID: 2056307085531689644}
   m_Layer: 0
   m_Name: BowlingBall_V2
   m_TagString: Untagged
@@ -143,6 +145,38 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 2
+--- !u!114 &5357005047908765449
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5022733497930765888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33192bf25577d9441aae2359ad0151f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallResetter
+  fallThreshold: -3
+  respawnTimeout: 10
+  stopSpeedThreshold: 0.15
+  stopRespawnDelay: 1
+--- !u!114 &2056307085531689644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5022733497930765888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bab16ffb466b96941adf8326603b2c41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallMagnusEffect
+  magnusCoeff: 0.2
+  invertSpin: 1
+  showForwardArrow: 1
+  arrowLength: 0.5
 --- !u!1 &6366178080433528413
 GameObject:
   m_ObjectHideFlags: 0
