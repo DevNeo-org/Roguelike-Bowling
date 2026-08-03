@@ -30,9 +30,29 @@ public class BallResetter : MonoBehaviour
     {
         _spawner = spawner;
         _rb = GetComponent<Rigidbody>();
+        gameObject.tag = "Ball";
+
+        if (GetComponent<BallFinishWatcher>() == null)
+            gameObject.AddComponent<BallFinishWatcher>();
+
+        if (PinDeckManager.Instance != null)
+            PinDeckManager.Instance.OnThrowJudged += HandleThrowJudged;
     }
 
-    /// <summary>BallLauncher가 실제 발사 직후 호출 — 정지 감지를 활성화한다.</summary>
+    private void OnDestroy()
+    {
+        if (PinDeckManager.Instance != null)
+            PinDeckManager.Instance.OnThrowJudged -= HandleThrowJudged;
+    }
+
+    private void HandleThrowJudged()
+    {
+        if (_triggered) return;
+        _triggered = true;
+        _spawner.Respawn(gameObject);
+    }
+
+    /// <summary>BallLauncher가 실제 발사 직후 호출 — 타임아웃 감지를 활성화한다.</summary>
     public void SetLaunched()
     {
         _hasLaunched = true;
@@ -49,28 +69,12 @@ public class BallResetter : MonoBehaviour
             return;
         }
 
-        // 타임아웃·정지 감지는 발사 이후에만 동작
+        // 타임아웃 감지는 발사 이후에만 동작 (정지 감지는 BallFinishWatcher가 담당)
         if (!_hasLaunched) return;
 
         _elapsed += Time.deltaTime;
         if (_elapsed >= respawnTimeout)
-        {
             Trigger();
-            return;
-        }
-
-        if (_rb != null)
-        {
-            float speed = _rb.linearVelocity.magnitude;
-
-            if (speed <= stopSpeedThreshold)
-                _stopTimer += Time.deltaTime;
-            else
-                _stopTimer = 0f;
-
-            if (_stopTimer >= stopRespawnDelay)
-                Trigger();
-        }
     }
 
     private void Trigger()

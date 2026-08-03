@@ -158,7 +158,9 @@ public class PinDeckManager : MonoBehaviour
             SweepFallenPins(pins);
         }
 
-        if (ball != null)
+        // BallResetter가 있는 공은 OnThrowJudged를 받아 BallSpawner가 삭제·리스폰을 처리한다.
+        // 없는 공(TestThrowController 등)은 여기서 직접 삭제한다.
+        if (ball != null && ball.GetComponent<BallResetter>() == null)
             StartCoroutine(DestroyWhenBallIsGone(ball));
     }
 
