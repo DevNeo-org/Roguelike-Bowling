@@ -100,6 +100,13 @@ public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             buyButton.onClick.RemoveListener(OnBuyButtonClicked);
     }
 
+    // 상점 할인 아이템 소지 시 가격을 할인해준다("상점가를 할인해 줍니다").
+    private int EffectivePrice()
+    {
+        bool discounted = InventoryManager.Instance != null && InventoryManager.Instance.IsOwned("상점 할인");
+        return discounted ? Mathf.RoundToInt(price * 0.85f) : price;
+    }
+
     private bool IsOwned()
     {
         if (isSkill)
@@ -116,7 +123,7 @@ public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         bool owned = IsOwned();
 
         if (priceText != null)
-            priceText.text = owned ? "보유중" : $"{price} G";
+            priceText.text = owned ? "보유중" : $"{EffectivePrice()} G";
 
         if (buyButton != null)
             buyButton.interactable = !owned;
@@ -136,9 +143,10 @@ public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             return;
         }
 
-        if (GoldManager.Instance.TrySpend(price))
+        int effectivePrice = EffectivePrice();
+        if (GoldManager.Instance.TrySpend(effectivePrice))
         {
-            Debug.Log($"[구매 성공] {itemName} 구매 완료 (-{price} G, 남은 골드: {GoldManager.Instance.CurrentGold} G)");
+            Debug.Log($"[구매 성공] {itemName} 구매 완료 (-{effectivePrice} G, 남은 골드: {GoldManager.Instance.CurrentGold} G)");
 
             if (isSkill)
                 SkillManager.Instance?.TryAddSkill(itemName);
@@ -149,7 +157,7 @@ public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         }
         else
         {
-            Debug.Log($"[구매 실패] 골드가 부족합니다. (필요: {price} G, 보유: {GoldManager.Instance.CurrentGold} G)");
+            Debug.Log($"[구매 실패] 골드가 부족합니다. (필요: {effectivePrice} G, 보유: {GoldManager.Instance.CurrentGold} G)");
         }
     }
 }

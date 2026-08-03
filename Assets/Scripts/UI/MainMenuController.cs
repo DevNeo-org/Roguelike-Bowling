@@ -11,6 +11,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private GameObject playScreen;
     [SerializeField] private GameObject settingsScreen;
     [SerializeField] private GameObject collectionScreen;
+    [SerializeField] private GameObject initialSkillSelectScreen;
     [SerializeField] private StageManager stageManager;
 
     private void Awake()
@@ -67,8 +68,6 @@ public void OnNewGameClicked()
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.StartNewGame();
 
-        if (stageManager != null)
-            stageManager.StartFromStageOne();
         if (BowlingScoreManager.Instance != null)
             BowlingScoreManager.Instance.StartNewGame();
 
@@ -78,8 +77,10 @@ public void OnNewGameClicked()
         if (SkillManager.Instance != null)
             SkillManager.Instance.StartNewGame();
 
-        if (playScreen != null)
-            playScreen.SetActive(true);
+        // 스테이지 시작(stageManager.StartFromStageOne())과 PlayScreen 활성화는
+        // 스킬 선택 화면에서 하나를 고른 뒤 InitialSkillPickController가 진행한다.
+        if (initialSkillSelectScreen != null)
+            initialSkillSelectScreen.SetActive(true);
 
         gameObject.SetActive(false);
     }
@@ -100,12 +101,11 @@ public void OnNewGameClicked()
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.LoadFromSave();
 
-        if (stageManager != null)
-            stageManager.StartFromStageOne();
-
-        // 스킬은 아직 저장/불러오기 대상이 아니므로 항상 빈 상태로 시작한다.
         if (SkillManager.Instance != null)
-            SkillManager.Instance.StartNewGame();
+            SkillManager.Instance.LoadFromSave();
+
+        if (stageManager != null)
+            stageManager.StartFromSavedStage();
 
         if (playScreen != null)
             playScreen.SetActive(true);

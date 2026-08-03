@@ -115,15 +115,49 @@ public class PinDeckManager : MonoBehaviour
         }
 
         int downCount = 0;
-        string pinStates = "";
         foreach (BowlingPin p in pins)
         {
             if (p.IsDown) downCount++;
+        }
+
+        // 핀이 딱 1개 남았을 때 개입하는 스킬(오류 등) 훅 - 여기서 마지막 핀을 쓰러뜨렸을 수
+        // 있으므로, 그런 스킬이 실제로 서 있는 핀 목록을 받았다면 물리가 정리될 시간을 조금
+        // 준 뒤 다시 집계한다.
+        if (pins.Count - downCount == 1 && SkillManager.Instance != null)
+        {
+            List<BowlingPin> standingPins = new List<BowlingPin>();
+            foreach (BowlingPin p in pins)
+            {
+                if (!p.IsDown) standingPins.Add(p);
+            }
+
+            foreach (SkillEffect effect in SkillManager.Instance.GetOwnedEffects())
+                effect.OnPinsSettled(standingPins);
+
+            yield return new WaitForSeconds(0.6f);
+
+            downCount = 0;
+            foreach (BowlingPin p in pins)
+            {
+                if (p.IsDown) downCount++;
+            }
+        }
+
+        string pinStates = "";
+        foreach (BowlingPin p in pins)
+        {
             pinStates += p.name + "=" + (p.IsDown ? "DOWN" : "up") + " ";
         }
 
         int newlyDown = Mathf.Max(0, downCount - lastKnownDownCount);
         lastKnownDownCount = downCount;
+
+        // 판정이 끝난 공이 아직 핀 슬롯 근처(레인 위)에 남아있는 상태에서
+        // RecordRoll/RecordThrow가 곧바로 ResetPins()를 트리거할 수 있다 - 이때 리셋되는
+        // 핀의 위치가 공과 겹치면 PhysX가 순간적으로 강하게 밀어내며(depenetration) 방금
+        // 세운 핀이 즉시 다시 쓰러진다. 이 공은 이번 투구 판정에서 이미 제 역할을 다했고
+        // 곧 삭제될 예정이므로, 리셋 전에 핀들과의 충돌을 미리 무시해 둔다.
+        IgnoreBallPinCollisions(ball, pins);
 
         bool frameChanged = false;
 
@@ -190,6 +224,20 @@ public class PinDeckManager : MonoBehaviour
             Destroy(ball);
     }
 
+    private void IgnoreBallPinCollisions(GameObject ball, List<BowlingPin> pins)
+    {
+        if (ball == null) return;
+        Collider ballCollider = ball.GetComponent<Collider>();
+        if (ballCollider == null) return;
+
+        foreach (BowlingPin p in pins)
+        {
+            Collider pinCollider = p.GetComponent<Collider>();
+            if (pinCollider != null)
+                Physics.IgnoreCollision(ballCollider, pinCollider, true);
+        }
+    }
+
     private void SweepFallenPins(List<BowlingPin> pins)
     {
         int swept = 0;
@@ -212,6 +260,25 @@ public class PinDeckManager : MonoBehaviour
             p.gameObject.SetActive(true);
             p.ResetPin();
         }
+    }
+
+    // 현재 활성 레인의 핀 10개 전부(쓰러져 있어도 포함) - 철핀처럼 핀 자체의 물리 속성을
+    // 바꿔야 하는 스킬에서 사용.
+    public List<BowlingPin> GetAllLanePins()
+    {
+        return GetActiveLanePins();
+    }
+
+    // 현재 활성 레인에서 아직 서 있는 핀만 돌려준다 (스킬 등, 서 있는 핀 중 하나를 골라야 하는 곳에서 사용).
+    public List<BowlingPin> GetStandingPins()
+    {
+        List<BowlingPin> result = new List<BowlingPin>();
+        foreach (BowlingPin p in GetActiveLanePins())
+        {
+            if (p.gameObject.activeSelf && !p.IsDown)
+                result.Add(p);
+        }
+        return result;
     }
 
     private List<BowlingPin> GetActiveLanePins()

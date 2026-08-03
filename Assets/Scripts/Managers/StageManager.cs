@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -17,6 +18,7 @@ public class StageManager : MonoBehaviour
     [SerializeField] private GameObject stagePlayUI;
     [SerializeField] private TextMeshProUGUI infoText;
     [SerializeField] private TextMeshProUGUI resultText;
+    [SerializeField] private ThrowResultPopupController resultPopup;
     [SerializeField] private TextMeshProUGUI[] throwSlot1;
     [SerializeField] private TextMeshProUGUI[] throwSlot2;
     [SerializeField] private TextMeshProUGUI throwSlot3Tenth;
@@ -44,6 +46,7 @@ public class StageManager : MonoBehaviour
     private bool isPlaying;
 
     public int CurrentFrameNumber => currentFrame;
+    public bool IsPlaying => isPlaying;
 
     // 프레임별로 던진 공의 핀 개수를 순서대로 기록 (10프레임만 보너스 투구로 최대 3개까지 가능).
     private List<int>[] frameThrows;
@@ -81,7 +84,7 @@ public class StageManager : MonoBehaviour
             stageScore = Mathf.Max(stageScore, targetScore);
             RefreshInfoText();
             isPlaying = false;
-            EnterMaintenance();
+            StartCoroutine(ShowClearPopupThenEnterMaintenance());
         }
     }
 
@@ -102,9 +105,17 @@ public class StageManager : MonoBehaviour
         StartStage(1);
     }
 
+    // "불러오기"에서 사용 - 마지막으로 저장된 스테이지의 1프레임부터 다시 시작한다
+    // (프레임 중간 물리 상태까지는 저장하지 않는다).
+    public void StartFromSavedStage()
+    {
+        StartStage(SaveManager.LoadStage(1));
+    }
+
     private void StartStage(int stage)
     {
         currentStage = stage;
+        SaveManager.SaveStage(stage);
         currentFrame = 1;
         stageScore = 0;
         targetScore = baseTargetScore + (stage - 1) * targetScoreIncreasePerStage;
@@ -223,6 +234,9 @@ public class StageManager : MonoBehaviour
         if (resultText != null)
             resultText.text = $"{currentFrame}프레임 {throwSlotIndex}투: {throwLabel}";
 
+        if (resultPopup != null)
+            resultPopup.Show(throwLabel);
+
         Debug.Log($"[스테이지] {currentFrame}프레임 {throwSlotIndex}투 결과: {throwLabel}");
 
         if (frameComplete)
@@ -271,10 +285,17 @@ public class StageManager : MonoBehaviour
 
         Debug.Log($"[스테이지] {currentFrame}프레임 종료 - 확정 점수 {stageScore}점 (목표 {targetScore}점)");
 
-        if (stageScore >= targetScore)
+        // 스트라이크/스페어 보너스가 아직 다음 프레임에서 정산 안 됐어도, 그 보너스가
+        // 최악의 경우(전부 거터)로 나오더라도 이미 목표를 넘긴다면 나머지 보너스 투구를
+        // 기다릴 필요 없이 바로 클리어 처리한다.
+        int guaranteedScore = ComputeMinimumGuaranteedScore();
+
+        if (stageScore >= targetScore || guaranteedScore >= targetScore)
         {
+            stageScore = Mathf.Max(stageScore, guaranteedScore);
+            RefreshInfoText();
             isPlaying = false;
-            EnterMaintenance();
+            StartCoroutine(ShowClearPopupThenEnterMaintenance());
             return;
         }
 
@@ -292,6 +313,74 @@ public class StageManager : MonoBehaviour
             PinDeckManager.Instance.ResetPins();
 
         RefreshInfoText();
+    }
+
+    // "스테이지 통과!" 팝업을 잠깐 띄운 뒤 정비 화면으로 넘어간다.
+    private IEnumerator ShowClearPopupThenEnterMaintenance()
+    {
+        float delay = 1f;
+
+        if (resultPopup != null)
+        {
+            resultPopup.Show("스테이지 통과!");
+            delay = resultPopup.DisplayDuration;
+        }
+
+        yield return new WaitForSeconds(delay);
+
+        EnterMaintenance();
+    }
+
+    // ComputeConfirmedScore와 동일하되, 스트라이크/스페어의 보너스 투구가 아직 안 나왔으면
+    // 포기(break)하는 대신 그 보너스를 최악의 경우인 0점으로 가정하고 계속 더한다.
+    // "지금 상태로 최악의 결과가 나와도 확보되는 점수"를 구하기 위한 것 - 이 값만으로도
+    // 목표를 넘기면 나머지 보너스 투구 결과를 기다리지 않고 바로 스테이지를 클리어시킨다.
+    private int ComputeMinimumGuaranteedScore()
+    {
+        int total = 0;
+
+        for (int f = 0; f < FramesPerStage; f++)
+        {
+            var t = frameThrows[f];
+            if (t.Count == 0)
+                break;
+
+            if (f < FramesPerStage - 1)
+            {
+                if (t[0] == 10)
+                {
+                    List<int> bonus = GetThrowsFrom(f + 1, 2);
+                    int b0 = bonus.Count > 0 ? bonus[0] : 0;
+                    int b1 = bonus.Count > 1 ? bonus[1] : 0;
+                    total += 10 + b0 + b1;
+                }
+                else if (t.Count >= 2 && t[0] + t[1] == 10)
+                {
+                    List<int> bonus = GetThrowsFrom(f + 1, 1);
+                    int b0 = bonus.Count > 0 ? bonus[0] : 0;
+                    total += 10 + b0;
+                }
+                else if (t.Count >= 2)
+                {
+                    total += t[0] + t[1];
+                }
+                else
+                {
+                    // 아직 프레임이 진행 중(첫 투구만 있음, 스트라이크 아님) - 이 투구는 앞
+                    // 프레임의 보너스로 이미 반영됐을 수 있으므로 별도로 더하지 않고 멈춘다.
+                    break;
+                }
+            }
+            else
+            {
+                int sum = 0;
+                foreach (var p in t)
+                    sum += p;
+                total += sum;
+            }
+        }
+
+        return total;
     }
 
     // 전통적인 볼링 점수 계산: 스트라이크는 다음 두 투구, 스페어는 다음 한 투구를 보너스로 더한다.
