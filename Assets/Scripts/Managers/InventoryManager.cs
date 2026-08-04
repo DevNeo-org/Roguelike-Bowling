@@ -35,20 +35,7 @@ public class InventoryManager : MonoBehaviour
         OnItemAdded?.Invoke(itemId);
         AutoSave();
 
-        if (ItemEffectRegistry.TryGet(itemId, out ItemEffect effect))
-            effect.OnAcquired();
-
         return true;
-    }
-
-    // 공 생성처럼 "보유한 모든 아이템에 대해 훅을 호출"해야 하는 곳에서 쓴다.
-    public IEnumerable<ItemEffect> GetOwnedEffects()
-    {
-        foreach (string itemId in ownedItems)
-        {
-            if (ItemEffectRegistry.TryGet(itemId, out ItemEffect effect))
-                yield return effect;
-        }
     }
 
     public void StartNewGame()
