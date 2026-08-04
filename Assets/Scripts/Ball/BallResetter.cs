@@ -37,6 +37,31 @@ public class BallResetter : MonoBehaviour
 
         if (PinDeckManager.Instance != null)
             PinDeckManager.Instance.OnThrowJudged += HandleThrowJudged;
+
+        IgnorePinDeckBackCollisions();
+    }
+
+    // 실제 볼링장처럼 핀을 지나친 공은 벽에 부딪혀 튕기는 대신 뒤쪽으로 빠져나가야 한다.
+    // PinBackstop/BackWall은 핀이 뒤로 날아가지 않도록 막는 용도라 그대로 두고,
+    // 공만 이 콜라이더들과의 충돌을 무시하도록 한다.
+    private void IgnorePinDeckBackCollisions()
+    {
+        Collider ballCollider = GetComponent<Collider>();
+        if (ballCollider == null) return;
+
+        GameObject backstop = GameObject.Find("PinBackstop");
+        if (backstop != null)
+        {
+            var col = backstop.GetComponent<Collider>();
+            if (col != null) Physics.IgnoreCollision(ballCollider, col, true);
+        }
+
+        GameObject backWall = GameObject.Find("BackWall");
+        if (backWall != null)
+        {
+            var col = backWall.GetComponent<Collider>();
+            if (col != null) Physics.IgnoreCollision(ballCollider, col, true);
+        }
     }
 
     private void OnDestroy()

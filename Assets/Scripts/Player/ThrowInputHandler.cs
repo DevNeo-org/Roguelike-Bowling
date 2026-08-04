@@ -71,9 +71,21 @@ public class ThrowInputHandler : MonoBehaviour
     [Tooltip("이 픽셀 이상 아래로 내려가면 백스윙으로 판정")]
     [SerializeField] private float backswingThresholdPx = 10f;
 
+    [Header("Ball Hit Test")]
+    [Tooltip("공을 눌러야 드래그가 시작된다 — 이 반경(픽셀) 안에서 누르면 공을 클릭한 것으로 인정")]
+    [SerializeField] private float ballHitRadiusPx = 80f;
+
     private readonly List<Vector2> _points = new List<Vector2>();
     private readonly List<float> _timestamps = new List<float>();
     private bool _isDragging;
+    private Rigidbody _ball;
+    private Camera _camera;
+
+    /// <summary>BallSpawner가 새 공 생성 후 호출 — 클릭 판정 대상(현재 공 위치)을 갱신한다.</summary>
+    public void SetBall(Rigidbody rb)
+    {
+        _ball = rb;
+    }
 
     /// <summary>공 삭제 시 BallSpawner가 호출 — 드래그 궤적·결과 전부 초기화.</summary>
     public void Reset()
@@ -91,17 +103,37 @@ public class ThrowInputHandler : MonoBehaviour
     private static Texture2D _lineTex;
     private GUIStyle _labelStyle;
 
+    private void Awake()
+    {
+        _camera = Camera.main;
+    }
+
     private void Update()
     {
         var mouse = Mouse.current;
         if (mouse == null) return;
 
         if (mouse.leftButton.wasPressedThisFrame)
-            BeginDrag(mouse.position.ReadValue());
+        {
+            // 공을 눌렀을 때만 드래그 시작 — 화면 아무 데나 클릭해도 투구가 시작되던 문제 방지.
+            if (IsPointerOnBall(mouse.position.ReadValue()))
+                BeginDrag(mouse.position.ReadValue());
+        }
         else if (_isDragging && mouse.leftButton.isPressed)
             ContinueDrag(mouse.position.ReadValue());
         else if (_isDragging && mouse.leftButton.wasReleasedThisFrame)
             EndDrag(mouse.position.ReadValue());
+    }
+
+    private bool IsPointerOnBall(Vector2 screenPos)
+    {
+        if (_ball == null || _camera == null) return false;
+
+        Vector3 ballScreenPos = _camera.WorldToScreenPoint(_ball.position);
+        if (ballScreenPos.z < 0f) return false; // 카메라 뒤에 있으면 클릭 대상 아님
+
+        float dist = Vector2.Distance(screenPos, new Vector2(ballScreenPos.x, ballScreenPos.y));
+        return dist <= ballHitRadiusPx;
     }
 
     private void BeginDrag(Vector2 pos)
@@ -233,6 +265,10 @@ public class ThrowInputHandler : MonoBehaviour
 
     private void OnGUI()
     {
+        // 메인메뉴/설정/도감/정비 화면 등 실제 투구 중이 아닐 때는 이 디버그 표시가 필요 없다.
+        if (StageManager.Instance == null || !StageManager.Instance.IsPlaying)
+            return;
+
         if (_labelStyle == null)
         {
             _labelStyle = new GUIStyle(GUI.skin.label)

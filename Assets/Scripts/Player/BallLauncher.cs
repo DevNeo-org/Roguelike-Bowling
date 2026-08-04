@@ -81,19 +81,33 @@ public class BallLauncher : MonoBehaviour
         _canLaunch = false;
         _ball.isKinematic = false;
 
+        if (SkillManager.Instance != null)
+        {
+            foreach (SkillEffect effect in SkillManager.Instance.GetOwnedEffects())
+                effect.OnThrowStart();
+        }
+
         float launchSpeed = Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, _input.ThrowSpeedNormalized);
+        float spinMultiplier = 1f;
+
+        BallSkillModifiers modifiers = _ball.GetComponent<BallSkillModifiers>();
+        if (modifiers != null)
+        {
+            launchSpeed *= modifiers.LaunchSpeedMultiplier;
+            spinMultiplier = modifiers.SpinMultiplier;
+        }
 
         // 드래그 중 뒤로 내려간 적 있으면 밀어내기, 앞으로만 이동했으면 던지기
         if (_input.HasMovedBackward)
-            ApplyPushThrow(launchSpeed);
+            ApplyPushThrow(launchSpeed, spinMultiplier);
         else
-            ApplySwingThrow(launchSpeed);
+            ApplySwingThrow(launchSpeed, spinMultiplier);
 
         _ballResetter?.SetLaunched();
     }
 
     /// <summary>스윙 던지기 — 릴리즈 시 공의 실제 위치(좌우 오프셋)로 발사 방향 결정 + 곡률 스핀.</summary>
-    private void ApplySwingThrow(float launchSpeed)
+    private void ApplySwingThrow(float launchSpeed, float spinMultiplier)
     {
         Vector3 laneForward = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
         Vector3 camRight    = Vector3.ProjectOnPlane(_camera.transform.right,   Vector3.up).normalized;
@@ -103,14 +117,20 @@ public class BallLauncher : MonoBehaviour
         float lateralRatio  = Mathf.Clamp(lateralAmount / armRadius, -1f, 1f);
         Vector3 worldDir    = (laneForward + camRight * lateralRatio).normalized;
 
+        // 밀어내기(ApplyPushThrow)와 마찬가지로 레인 높이로 보정한다 - 안 그러면 조준 중
+        // 들고 있던 높이(spawnPosition.y)에서 그대로 자유낙하해 레인에 강하게 부딪히며 크게 튕겨오른다.
+        Vector3 pos = _ball.position;
+        pos.y = pushStartHeight;
+        _ball.position = pos;
+
         _ball.linearVelocity  = worldDir * launchSpeed;
-        _ball.angularVelocity = Vector3.up * _input.CurvatureValue * spinScale;
+        _ball.angularVelocity = Vector3.up * _input.CurvatureValue * spinScale * spinMultiplier;
 
         Debug.Log($"[스윙 던지기] 방향: {worldDir:F2} | 속도: {launchSpeed:F1} m/s | 스핀: {_ball.angularVelocity.y:F2} rad/s");
     }
 
     /// <summary>밀어내기 — 레인 정방향으로 스핀 없이 직진.</summary>
-    private void ApplyPushThrow(float launchSpeed)
+    private void ApplyPushThrow(float launchSpeed, float spinMultiplier)
     {
         Vector3 laneForward = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
 
@@ -119,7 +139,7 @@ public class BallLauncher : MonoBehaviour
         _ball.position = pos;
 
         _ball.linearVelocity  = laneForward * launchSpeed;
-        _ball.angularVelocity = Vector3.up * _input.CurvatureValue * spinScale;
+        _ball.angularVelocity = Vector3.up * _input.CurvatureValue * spinScale * spinMultiplier;
 
         Debug.Log($"[밀어내기] 속도: {launchSpeed:F1} m/s | 스핀: {_ball.angularVelocity.y:F2} rad/s");
     }
