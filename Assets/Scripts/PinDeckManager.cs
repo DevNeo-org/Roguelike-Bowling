@@ -15,6 +15,10 @@ public class PinDeckManager : MonoBehaviour
 
     [SerializeField] private string mapRootName = "Map";
 
+    // Scene별 물리 레인 시퀀스(예: Scene_Stage_Mountain의 MountainLaneProgress)가 설정하면
+    // LaneStageManager의 테마 키(Basic/Ice/...) 대신 이 키로 활성 핀을 찾는다. null이면 기존 동작 그대로.
+    public string LaneOverrideKey { get; set; }
+
     private int lastKnownDownCount;
     private int lastKnownFrame;
     private readonly HashSet<int> processedBallIds = new HashSet<int>();
@@ -115,15 +119,26 @@ public class PinDeckManager : MonoBehaviour
         }
 
         int downCount = 0;
-        string pinStates = "";
         foreach (BowlingPin p in pins)
         {
             if (p.IsDown) downCount++;
+        }
+
+        string pinStates = "";
+        foreach (BowlingPin p in pins)
+        {
             pinStates += p.name + "=" + (p.IsDown ? "DOWN" : "up") + " ";
         }
 
         int newlyDown = Mathf.Max(0, downCount - lastKnownDownCount);
         lastKnownDownCount = downCount;
+
+        // 판정이 끝난 공이 아직 핀 슬롯 근처(레인 위)에 남아있는 상태에서
+        // RecordRoll/RecordThrow가 곧바로 ResetPins()를 트리거할 수 있다 - 이때 리셋되는
+        // 핀의 위치가 공과 겹치면 PhysX가 순간적으로 강하게 밀어내며(depenetration) 방금
+        // 세운 핀이 즉시 다시 쓰러진다. 이 공은 이번 투구 판정에서 이미 제 역할을 다했고
+        // 곧 삭제될 예정이므로, 리셋 전에 핀들과의 충돌을 미리 무시해 둔다.
+        IgnoreBallPinCollisions(ball, pins);
 
         bool frameChanged = false;
 
@@ -190,6 +205,20 @@ public class PinDeckManager : MonoBehaviour
             Destroy(ball);
     }
 
+    private void IgnoreBallPinCollisions(GameObject ball, List<BowlingPin> pins)
+    {
+        if (ball == null) return;
+        Collider ballCollider = ball.GetComponent<Collider>();
+        if (ballCollider == null) return;
+
+        foreach (BowlingPin p in pins)
+        {
+            Collider pinCollider = p.GetComponent<Collider>();
+            if (pinCollider != null)
+                Physics.IgnoreCollision(ballCollider, pinCollider, true);
+        }
+    }
+
     private void SweepFallenPins(List<BowlingPin> pins)
     {
         int swept = 0;
@@ -218,7 +247,7 @@ public class PinDeckManager : MonoBehaviour
     {
         List<BowlingPin> result = new List<BowlingPin>();
 
-        string laneKey = LaneStageManager.Instance != null ? LaneStageManager.Instance.ActiveLaneKey : "Basic";
+        string laneKey = LaneOverrideKey ?? (LaneStageManager.Instance != null ? LaneStageManager.Instance.ActiveLaneKey : "Basic");
         GameObject mapRoot = GameObject.Find(mapRootName);
         if (mapRoot == null) return result;
 

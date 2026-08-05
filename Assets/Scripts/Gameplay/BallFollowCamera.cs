@@ -28,6 +28,14 @@ public class BallFollowCamera : MonoBehaviour
             PinDeckManager.Instance.OnThrowJudged -= HandleThrowJudged;
     }
 
+    // 물리적으로 여러 레인을 순서대로 이동하는 씬(예: MountainLaneProgress)이 레인 전환 후 호출해서
+    // 기준 Z(원위치)와 핀 앞 한계선을 새 레인 위치로 갱신한다.
+    public void SetLaneOrigin(float newStartZ, float newPinFrontZ)
+    {
+        startZ = newStartZ;
+        pinFrontZ = newPinFrontZ;
+    }
+
     private void HandleThrowJudged()
     {
         // 판정된 공은 (파괴되기 전까지 잠시 씬에 남아있어도) 다시 쫓아가지 않도록 기억해둔다.

@@ -63,9 +63,18 @@ public class BowlingPin : MonoBehaviour
     private void Update()
     {
         if (graceTimer > 0f)
+        {
             graceTimer -= Time.deltaTime;
+
+            if (graceTimer <= 0f && rb != null)
+                rb.isKinematic = false;
+        }
     }
 
+    // 핀이 리셋되는 순간, 마침 근처에 남아있는 공(또는 아직 리셋 전인 다른 핀)과 겹치는 경우가
+    // 있다 - 이때 물리 엔진이 다음 스텝에 겹침을 강제로 풀어내며(depenetration) 방금 세운 핀을
+    // 그대로 다시 쓰러뜨려버린다. gracePeriod 동안 잠깐 kinematic으로 만들어 물리 개입 자체를
+    // 막고, Update()에서 grace가 끝나면 다시 일반 다이나믹 상태로 되돌린다.
     public void ResetPin()
     {
         transform.position = initialPosition;
@@ -76,6 +85,7 @@ public class BowlingPin : MonoBehaviour
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
         }
     }
 }

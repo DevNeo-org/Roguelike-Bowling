@@ -5,6 +5,7 @@ public static class SaveManager
 {
     private const string GoldKey = "Save_Gold";
     private const string InventoryKey = "Save_Inventory";
+    private const string StageKey = "Save_Stage";
     private const string HasSaveKey = "Save_Exists";
     private const char InventoryDelimiter = '|';
 
@@ -49,10 +50,27 @@ public static class SaveManager
         return result;
     }
 
+    // 스테이지 진행도는 "스테이지가 시작되는 시점"을 저장 단위로 삼는다 - 불러오면 그
+    // 스테이지의 1프레임부터 다시 시작하며, 프레임 중간 물리 상태까지는 복원하지 않는다.
+    public static void SaveStage(int stage)
+    {
+        PlayerPrefs.SetInt(StageKey, stage);
+        PlayerPrefs.SetInt(HasSaveKey, 1);
+        PlayerPrefs.Save();
+
+        Debug.Log($"[저장] 스테이지 자동 저장 완료 (스테이지: {stage})");
+    }
+
+    public static int LoadStage(int defaultValue)
+    {
+        return PlayerPrefs.GetInt(StageKey, defaultValue);
+    }
+
     public static void DeleteSave()
     {
         PlayerPrefs.DeleteKey(GoldKey);
         PlayerPrefs.DeleteKey(InventoryKey);
+        PlayerPrefs.DeleteKey(StageKey);
         PlayerPrefs.DeleteKey(HasSaveKey);
         PlayerPrefs.Save();
 

@@ -39,7 +39,16 @@ public class BallSpawner : MonoBehaviour
         if (resetter != null)
             resetter.Init(this);
 
-        launcher.SetBall(ball.GetComponent<Rigidbody>());
+        var rb = ball.GetComponent<Rigidbody>();
+
+        // 플레이어가 실제로 던지기(Launch) 전까지는 중력 영향을 받지 않도록 고정한다.
+        // 이걸 안 하면 스폰 직후 공이 바로 떨어져서(중력) 플레이어 입력 없이 거터로 판정돼버린다.
+        // (새로 생성된 Rigidbody는 이미 속도가 0이므로 별도로 초기화할 필요는 없다 — kinematic body에
+        //  linearVelocity/angularVelocity를 대입하면 콘솔에 지원되지 않는다는 경고만 찍힌다.)
+        rb.isKinematic = true;
+
+        launcher.SetBall(rb);
+        inputHandler.SetBall(rb);
         launcher.ResetLaunch();
 
         Debug.Log("[스포너] 새 공 생성 완료");

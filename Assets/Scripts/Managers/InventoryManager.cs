@@ -34,6 +34,7 @@ public class InventoryManager : MonoBehaviour
         ownedItems.Add(itemId);
         OnItemAdded?.Invoke(itemId);
         AutoSave();
+
         return true;
     }
 

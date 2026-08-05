@@ -67,16 +67,14 @@ public void OnNewGameClicked()
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.StartNewGame();
 
-        if (stageManager != null)
-            stageManager.StartFromStageOne();
         if (BowlingScoreManager.Instance != null)
             BowlingScoreManager.Instance.StartNewGame();
 
         if (LaneStageManager.Instance != null)
             LaneStageManager.Instance.StartNewGame();
 
-        if (SkillManager.Instance != null)
-            SkillManager.Instance.StartNewGame();
+        if (stageManager != null)
+            stageManager.StartFromStageOne();
 
         if (playScreen != null)
             playScreen.SetActive(true);
@@ -101,11 +99,7 @@ public void OnNewGameClicked()
             InventoryManager.Instance.LoadFromSave();
 
         if (stageManager != null)
-            stageManager.StartFromStageOne();
-
-        // 스킬은 아직 저장/불러오기 대상이 아니므로 항상 빈 상태로 시작한다.
-        if (SkillManager.Instance != null)
-            SkillManager.Instance.StartNewGame();
+            stageManager.StartFromSavedStage();
 
         if (playScreen != null)
             playScreen.SetActive(true);
