@@ -9856,7 +9856,7 @@ Transform:
   m_GameObject: {fileID: 970216842}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.05, y: 0.69, z: 0.31686}
+  m_LocalPosition: {x: -3.05, y: 0.104, z: 0.836}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -23570,16 +23570,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 952b15675b3b5594cb6ff5bfd3cb1be4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThrowInputHandler
-  sampleThreshold: 8
-  maxPoints: 80
-  minSpeedPx: 100
-  maxSpeedPx: 3000
-  recentPointCount: 10
-  curvatureScale: 30
-  arrowLength: 100
-  trajectoryColor: {r: 0, g: 1, b: 1, a: 0.8}
-  directionColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  backswingThresholdPx: 10
+  _mainMenuUI: {fileID: 99278979}
+  backswingThresholdPx: 20
+  oscillationSpeed: 1.2
+  forwardThresholdPx: 20
+  sampleThreshold: 6
+  maxArrowLengthPx: 160
 --- !u!114 &2081657907
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23594,9 +23590,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BallLauncher
   minLaunchSpeed: 1
   maxLaunchSpeed: 10
-  spinScale: 15
-  armRadius: 0.5
-  pushStartHeight: 0
+  armRadius: 1.5
+  spinScale: 10
+  _mainMenuUI: {fileID: 99278979}
 --- !u!1 &2090563130
 GameObject:
   m_ObjectHideFlags: 0

@@ -16,16 +16,38 @@ public class BallMagnusEffect : MonoBehaviour
     [Tooltip("횡력 방향이 반대로 느껴질 경우 체크.")]
     [SerializeField] private bool invertSpin = false;
 
-    [Header("Debug")]
-    [Tooltip("공의 정면 방향 화살표를 Game 뷰(Gizmos ON)에 표시")]
+    [Header("Debug Arrow")]
+    [Tooltip("Game 뷰에서 공의 정면 방향 화살표 표시")]
     [SerializeField] private bool showForwardArrow = true;
     [SerializeField] private float arrowLength = 0.5f;
+    [SerializeField] private Color arrowColor = Color.red;
 
     private Rigidbody _rb;
+    private LineRenderer _line;
+
+    private Material _lineMaterial;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
+
+        _lineMaterial = new Material(Shader.Find("Sprites/Default"));
+
+        _line = gameObject.AddComponent<LineRenderer>();
+        _line.positionCount = 2;
+        _line.startWidth = 0.05f;
+        _line.endWidth = 0.05f;
+        _line.useWorldSpace = true;
+        _line.material = _lineMaterial;
+        _line.startColor = arrowColor;
+        _line.endColor   = arrowColor;
+        _line.enabled = showForwardArrow;
+    }
+
+    private void OnDestroy()
+    {
+        if (_lineMaterial != null)
+            Destroy(_lineMaterial);
     }
 
     // LaneFrictionZone과 동일하게 OnCollisionStay 사용:
@@ -39,26 +61,17 @@ public class BallMagnusEffect : MonoBehaviour
             force = -force;
 
         _rb.AddForce(force, ForceMode.Acceleration);
+        Debug.Log($"[Magnus] 충돌: {collision.gameObject.name} | 힘: {force} | angVel: {_rb.angularVelocity.y:F2}");
     }
 
     private void Update()
     {
+        if (_line == null) return;
+        _line.enabled = showForwardArrow;
         if (!showForwardArrow) return;
 
         Vector3 origin = transform.position;
-        Vector3 forward = transform.forward;
-
-        // 정면 방향 (빨강)
-        Debug.DrawRay(origin, forward * arrowLength, Color.red);
-
-        // 화살촉 (짧은 보조선 두 개)
-        Vector3 tip = origin + forward * arrowLength;
-        Vector3 right = transform.right;
-        Vector3 up    = transform.up;
-        float headLen = arrowLength * 0.3f;
-        Debug.DrawRay(tip, (-forward + right) * headLen, Color.red);
-        Debug.DrawRay(tip, (-forward - right) * headLen, Color.red);
-        Debug.DrawRay(tip, (-forward + up)    * headLen, Color.red);
-        Debug.DrawRay(tip, (-forward - up)    * headLen, Color.red);
+        _line.SetPosition(0, origin);
+        _line.SetPosition(1, origin + transform.forward * arrowLength);
     }
 }
