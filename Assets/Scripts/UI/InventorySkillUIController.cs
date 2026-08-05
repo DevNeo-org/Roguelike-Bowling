@@ -2,14 +2,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 좌측 하단 버튼으로 여닫는 패널: 현재 보유 중인 아이템(InventoryManager)과
-// 획득한 스킬(SkillManager)을 GameDataManager의 이름/설명 데이터와 대조해서 보여준다.
+// 좌측 하단 버튼으로 여닫는 패널: 현재 보유 중인 아이템(InventoryManager)을
+// GameDataManager의 이름/설명 데이터와 대조해서 보여준다.
 public class InventorySkillUIController : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
     [SerializeField] private Button toggleButton;
     [SerializeField] private RectTransform inventoryListContainer;
-    [SerializeField] private RectTransform skillListContainer;
     [SerializeField] private GameObject rowPrefab;
 
     private void Awake()
@@ -42,7 +41,6 @@ public class InventorySkillUIController : MonoBehaviour
     private void Refresh()
     {
         ClearChildren(inventoryListContainer);
-        ClearChildren(skillListContainer);
 
         bool hasItem = false;
         foreach (var item in GameDataManager.LoadShopItems())
@@ -56,19 +54,6 @@ public class InventorySkillUIController : MonoBehaviour
 
         if (!hasItem)
             CreateRow(inventoryListContainer, "", "보유 중인 아이템이 없습니다.");
-
-        bool hasSkill = false;
-        foreach (var skill in GameDataManager.LoadSkills())
-        {
-            if (SkillManager.Instance == null || !SkillManager.Instance.IsOwned(skill.name))
-                continue;
-
-            CreateRow(skillListContainer, skill.name, skill.description);
-            hasSkill = true;
-        }
-
-        if (!hasSkill)
-            CreateRow(skillListContainer, "", "획득한 스킬이 없습니다.");
     }
 
     private void CreateRow(RectTransform container, string title, string description)

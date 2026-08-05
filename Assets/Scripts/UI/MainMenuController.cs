@@ -11,7 +11,6 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private GameObject playScreen;
     [SerializeField] private GameObject settingsScreen;
     [SerializeField] private GameObject collectionScreen;
-    [SerializeField] private GameObject initialSkillSelectScreen;
     [SerializeField] private StageManager stageManager;
 
     private void Awake()
@@ -74,13 +73,11 @@ public void OnNewGameClicked()
         if (LaneStageManager.Instance != null)
             LaneStageManager.Instance.StartNewGame();
 
-        if (SkillManager.Instance != null)
-            SkillManager.Instance.StartNewGame();
+        if (stageManager != null)
+            stageManager.StartFromStageOne();
 
-        // 스테이지 시작(stageManager.StartFromStageOne())과 PlayScreen 활성화는
-        // 스킬 선택 화면에서 하나를 고른 뒤 InitialSkillPickController가 진행한다.
-        if (initialSkillSelectScreen != null)
-            initialSkillSelectScreen.SetActive(true);
+        if (playScreen != null)
+            playScreen.SetActive(true);
 
         gameObject.SetActive(false);
     }
@@ -100,9 +97,6 @@ public void OnNewGameClicked()
 
         if (InventoryManager.Instance != null)
             InventoryManager.Instance.LoadFromSave();
-
-        if (SkillManager.Instance != null)
-            SkillManager.Instance.LoadFromSave();
 
         if (stageManager != null)
             stageManager.StartFromSavedStage();
