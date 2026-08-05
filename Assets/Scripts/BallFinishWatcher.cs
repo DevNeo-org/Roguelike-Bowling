@@ -9,36 +9,44 @@ using UnityEngine;
 // even if ThrowEndZone also fires.
 public class BallFinishWatcher : MonoBehaviour
 {
-    [SerializeField] private float stopSpeedThreshold = 0.15f;
-    [SerializeField] private float stopTimeRequired = 0.6f;
-    [SerializeField] private float maxLifetime = 6f;
+    // BallResetter.Init()에서 AddComponent로 추가되므로 인스펙터 설정 불가 — 상수로 관리
+    private const float StopSpeedThreshold = 0.15f;
+    private const float StopTimeRequired   = 0.6f;
+    private const float MaxLifetime        = 6f;
 
     private Rigidbody rb;
     private float stopTimer;
     private float age;
     private bool finished;
+    private bool hasLaunched;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
     }
 
+    /// <summary>BallResetter.SetLaunched()에서 호출 — 발사 후부터 카운트 시작.</summary>
+    public void SetLaunched()
+    {
+        hasLaunched = true;
+    }
+
     private void Update()
     {
-        if (finished) return;
+        if (finished || !hasLaunched) return;
 
         age += Time.deltaTime;
 
         if (rb != null && !rb.isKinematic)
         {
             float speed = rb.linearVelocity.magnitude + rb.angularVelocity.magnitude;
-            if (speed < stopSpeedThreshold)
+            if (speed < StopSpeedThreshold)
                 stopTimer += Time.deltaTime;
             else
                 stopTimer = 0f;
         }
 
-        if (stopTimer >= stopTimeRequired || age >= maxLifetime)
+        if (stopTimer >= StopTimeRequired || age >= MaxLifetime)
         {
             Finish();
         }

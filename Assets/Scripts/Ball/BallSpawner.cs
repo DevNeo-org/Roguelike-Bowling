@@ -48,7 +48,6 @@ public class BallSpawner : MonoBehaviour
         rb.isKinematic = true;
 
         launcher.SetBall(rb);
-        inputHandler.SetBall(rb);
         launcher.ResetLaunch();
 
         Debug.Log("[스포너] 새 공 생성 완료");

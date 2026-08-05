@@ -2,324 +2,275 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Handles mouse drag input to compute bowling throw direction.
-// Attach to Player_Test.
+// 볼링 투구 입력 처리
 //
-// LMB drag: record trajectory
-// On release: compute throw angle via average recent direction + signed curvature offset (Plan A)
+// [흐름]
+//  Idle
+//   → LMB 누름 → Positioning  (좌우 드래그로 공 위치 이동)
+//   → 아래로 드래그 → Oscillating  (파워 PingPong 진동)
+//   → 앞으로 드래그 → ForwardDrag  (궤적 곡률로 스핀 결정)
+//   → LMB 릴리즈 → Done
 //
-// Public result properties (ThrowDirectionScreen, ThrowAngleDeg) are read by
-// the throw execution script in the next step.
+// ThrowPowerNormalized     : [0,1] Oscillating에서 확정
+// SpinNormalized           : [-1,1] ForwardDrag 궤적 곡률. 양수=반시계(왼쪽 휨), 음수=시계(오른쪽 휨)
 public class ThrowInputHandler : MonoBehaviour
 {
-    [Header("Sampling")]
-    [SerializeField] private float sampleThreshold = 8f;
-    [SerializeField] private int maxPoints = 80;
+    [Header("UI Block")]
+    [Tooltip("이 UI가 활성화되어 있으면 입력을 차단합니다 (예: MainMenuUI)")]
+    [SerializeField] private GameObject _mainMenuUI;
 
-    [Header("Speed")]
-    [Tooltip("이 픽셀/초 이하면 최소 속도로 취급")]
-    [SerializeField] private float minSpeedPx = 200f;
-    [Tooltip("이 픽셀/초 이상이면 최대 속도로 취급")]
-    [SerializeField] private float maxSpeedPx = 1500f;
+    [Header("Backswing")]
+    [Tooltip("이 픽셀 이상 아래로 드래그하면 파워 진동 시작")]
+    [SerializeField] private float backswingThresholdPx = 40f;
 
-    [Header("Direction — Plan A")]
-    [Tooltip("릴리즈 직전 몇 개의 점으로 기본 방향을 구할지")]
-    [SerializeField] private int recentPointCount = 10;
-    [Tooltip("곡률 → 각도 오프셋 배율 (도 단위). 작을수록 초기 방향이 직선에 가까워짐")]
-    [SerializeField, Range(0f, 30f)] private float curvatureScale = 7f;
+    [Header("Oscillation")]
+    [Tooltip("파워 진동 속도 (값이 클수록 빠름)")]
+    [SerializeField] private float oscillationSpeed = 1.2f;
+
+    [Header("Forward Drag")]
+    [Tooltip("진동 중 가장 아래 지점에서 이 픽셀 이상 위로 올라오면 앞 드래그 시작")]
+    [SerializeField] private float forwardThresholdPx = 20f;
+    [Tooltip("앞 드래그 중 포인트 샘플링 최소 거리 (px)")]
+    [SerializeField] private float sampleThreshold = 6f;
 
     [Header("Visualization")]
-    [SerializeField] private float arrowLength = 100f;
-    [SerializeField] private Color trajectoryColor = new Color(0f, 1f, 1f, 0.8f);
-    [SerializeField] private Color directionColor = Color.yellow;
+    [SerializeField] private float maxArrowLengthPx = 160f;
 
-    /// <summary>릴리즈 후 true. 새 드래그를 시작하면 false로 초기화.</summary>
-    public bool HasResult { get; private set; }
+    // ── 공개 프로퍼티 ──────────────────────────────────────────────────────────
 
-    /// <summary>LMB를 누르고 있는 동안 true.</summary>
-    public bool IsDragging => _isDragging;
+    public enum ThrowState { Idle, Positioning, Oscillating, ForwardDrag, Done }
 
-    /// <summary>
-    /// 정규화된 투구 방향 (스크린 좌표 기준, Y축 위 = 양수).
-    /// 다음 단계에서 월드 XZ 방향으로 변환해 사용.
-    /// </summary>
-    public Vector2 ThrowDirectionScreen { get; private set; }
+    public ThrowState State { get; private set; } = ThrowState.Idle;
+    public bool HasResult => State == ThrowState.Done;
 
-    /// <summary>투구 각도 (도). 0 = 오른쪽, 90 = 화면 위쪽.</summary>
-    public float ThrowAngleDeg { get; private set; }
+    /// <summary>파워 [0,1]. Oscillating에서 확정.</summary>
+    public float ThrowPowerNormalized { get; private set; }
 
     /// <summary>
-    /// 릴리즈 직전 3점으로 산출한 부호 있는 곡률 프록시 [-1, 1].
+    /// 스핀 [-1,1]. 앞 드래그 궤적의 곡률로 결정.
     /// 양수 = 반시계(왼쪽으로 휨), 음수 = 시계(오른쪽으로 휨).
-    /// BallLauncher가 스핀 적용에 사용.
     /// </summary>
-    public float CurvatureValue { get; private set; }
+    public float SpinNormalized { get; private set; }
 
-    /// <summary>
-    /// 릴리즈 시 마우스 이동 속도를 minSpeedPx~maxSpeedPx 범위로 정규화한 값 [0, 1].
-    /// BallLauncher가 발사 속도 스케일링에 사용.
-    /// </summary>
-    public float ThrowSpeedNormalized { get; private set; }
+    /// <summary>현재 마우스 스크린 좌표. BallLauncher가 Positioning 중 공 이동에 사용.</summary>
+    public Vector2 CurrentMousePos { get; private set; }
 
-    /// <summary>
-    /// 드래그 중 마우스가 아래로 내려간 적 있으면 true (백스윙 판정).
-    /// BallLauncher가 밀어내기/던지기 분기에 사용.
-    /// </summary>
-    public bool HasMovedBackward { get; private set; }
+    // ── 내부 상태 ──────────────────────────────────────────────────────────────
 
-    [Header("Throw Style Detection")]
-    [Tooltip("이 픽셀 이상 아래로 내려가면 백스윙으로 판정")]
-    [SerializeField] private float backswingThresholdPx = 10f;
+    private Vector2 _dragStartPos;
+    private float _lowestY;
+    private float _oscillationTimer;
 
-    [Header("Ball Hit Test")]
-    [Tooltip("공을 눌러야 드래그가 시작된다 — 이 반경(픽셀) 안에서 누르면 공을 클릭한 것으로 인정")]
-    [SerializeField] private float ballHitRadiusPx = 80f;
+    private readonly List<Vector2> _forwardPoints = new List<Vector2>();
 
-    private readonly List<Vector2> _points = new List<Vector2>();
-    private readonly List<float> _timestamps = new List<float>();
-    private bool _isDragging;
-    private Rigidbody _ball;
-    private Camera _camera;
+    private GUIStyle _labelStyle;
+    private static Texture2D _lineTex;
 
-    /// <summary>BallSpawner가 새 공 생성 후 호출 — 클릭 판정 대상(현재 공 위치)을 갱신한다.</summary>
-    public void SetBall(Rigidbody rb)
-    {
-        _ball = rb;
-    }
+    // ── 외부 호출 ──────────────────────────────────────────────────────────────
 
-    /// <summary>공 삭제 시 BallSpawner가 호출 — 드래그 궤적·결과 전부 초기화.</summary>
+    /// <summary>공 삭제 시 BallSpawner가 호출 — 상태 전체 초기화.</summary>
     public void Reset()
     {
-        _points.Clear();
-        _timestamps.Clear();
-        _isDragging = false;
-        HasResult = false;
-        ThrowDirectionScreen = Vector2.zero;
-        ThrowAngleDeg = 0f;
-        CurvatureValue = 0f;
-        ThrowSpeedNormalized = 0f;
-        HasMovedBackward = false;
+        State = ThrowState.Idle;
+        ThrowPowerNormalized = 0f;
+        SpinNormalized = 0f;
+        _oscillationTimer = 0f;
+        _forwardPoints.Clear();
     }
-    private static Texture2D _lineTex;
-    private GUIStyle _labelStyle;
 
-    private void Awake()
-    {
-        _camera = Camera.main;
-    }
+    // ── 입력 처리 ──────────────────────────────────────────────────────────────
+
+    private bool IsMenuActive => _mainMenuUI != null && _mainMenuUI.activeInHierarchy;
 
     private void Update()
     {
+        if (IsMenuActive)
+        {
+            if (State != ThrowState.Idle && State != ThrowState.Done)
+                State = ThrowState.Idle;
+            return;
+        }
+
         var mouse = Mouse.current;
         if (mouse == null) return;
 
-        if (mouse.leftButton.wasPressedThisFrame)
+        Vector2 pos = mouse.position.ReadValue();
+        CurrentMousePos = pos;
+
+        switch (State)
         {
-            // 공을 눌렀을 때만 드래그 시작 — 화면 아무 데나 클릭해도 투구가 시작되던 문제 방지.
-            if (IsPointerOnBall(mouse.position.ReadValue()))
-                BeginDrag(mouse.position.ReadValue());
-        }
-        else if (_isDragging && mouse.leftButton.isPressed)
-            ContinueDrag(mouse.position.ReadValue());
-        else if (_isDragging && mouse.leftButton.wasReleasedThisFrame)
-            EndDrag(mouse.position.ReadValue());
-    }
-
-    private bool IsPointerOnBall(Vector2 screenPos)
-    {
-        if (_ball == null || _camera == null) return false;
-
-        Vector3 ballScreenPos = _camera.WorldToScreenPoint(_ball.position);
-        if (ballScreenPos.z < 0f) return false; // 카메라 뒤에 있으면 클릭 대상 아님
-
-        float dist = Vector2.Distance(screenPos, new Vector2(ballScreenPos.x, ballScreenPos.y));
-        return dist <= ballHitRadiusPx;
-    }
-
-    private void BeginDrag(Vector2 pos)
-    {
-        _points.Clear();
-        _timestamps.Clear();
-        _points.Add(pos);
-        _timestamps.Add(Time.unscaledTime);
-        _isDragging = true;
-        HasResult = false;
-        HasMovedBackward = false;
-    }
-
-    private void ContinueDrag(Vector2 pos)
-    {
-        // 백스윙 감지: sampleThreshold 무관하게 매 프레임 체크
-        float deltaY = pos.y - _points[_points.Count - 1].y;
-        if (deltaY < -backswingThresholdPx)
-            HasMovedBackward = true;
-
-        if (Vector2.Distance(pos, _points[_points.Count - 1]) < sampleThreshold)
-            return;
-
-        _points.Add(pos);
-        _timestamps.Add(Time.unscaledTime);
-
-        if (_points.Count > maxPoints)
-        {
-            _points.RemoveAt(0);
-            _timestamps.RemoveAt(0);
-        }
-    }
-
-    private void EndDrag(Vector2 pos)
-    {
-        // 릴리즈 순간은 백스윙 감지 없이 포인트만 추가
-        if (Vector2.Distance(pos, _points[_points.Count - 1]) >= sampleThreshold)
-        {
-            _points.Add(pos);
-            _timestamps.Add(Time.unscaledTime);
-            if (_points.Count > maxPoints)
-            {
-                _points.RemoveAt(0);
-                _timestamps.RemoveAt(0);
-            }
-        }
-        _isDragging = false;
-
-        if (_points.Count < 2) return;
-
-        CurvatureValue = 0f;  // ComputeThrowAngle 내부에서 갱신됨
-        (ThrowDirectionScreen, ThrowAngleDeg) = ComputeThrowAngle();
-        ThrowSpeedNormalized = ComputeThrowSpeedNormalized();
-        HasResult = true;
-    }
-
-    /// <summary>
-    /// 최근 N점 평균 방향 + 전체 궤적 평균 곡률 오프셋
-    /// </summary>
-    private (Vector2 dir, float angleDeg) ComputeThrowAngle()
-    {
-        // 기본 방향: 최근 N 구간 벡터 합산
-        int start = Mathf.Max(0, _points.Count - recentPointCount - 1);
-        var sum = Vector2.zero;
-        for (int i = start; i < _points.Count - 1; i++)
-            sum += _points[i + 1] - _points[i];
-
-        if (sum.sqrMagnitude < 0.0001f)
-            return (Vector2.up, 90f);
-
-        sum.Normalize();
-        float baseAngle = Mathf.Atan2(sum.y, sum.x) * Mathf.Rad2Deg;
-
-        // 곡률 보정: 전체 궤적의 연속 3점마다 부호 있는 곡률을 구해 평균냄
-        float curvatureOffset = 0f;
-        if (_points.Count >= 3)
-        {
-            float crossSum = 0f;
-            int count = 0;
-            for (int i = 1; i < _points.Count - 1; i++)
-            {
-                Vector2 a = _points[i]     - _points[i - 1];
-                Vector2 b = _points[i + 1] - _points[i];
-                float denom = a.magnitude * b.magnitude;
-                if (denom > 0.0001f)
+            case ThrowState.Idle:
+                if (mouse.leftButton.wasPressedThisFrame)
                 {
-                    float cross = a.x * b.y - a.y * b.x;
-                    crossSum += cross / denom;   // 정규화된 곡률 [-1, 1]
-                    count++;
+                    _dragStartPos = pos;
+                    State = ThrowState.Positioning;
                 }
-            }
+                break;
 
-            if (count > 0)
-            {
-                CurvatureValue = crossSum / count;       // 전체 평균 곡률
-                curvatureOffset = CurvatureValue * curvatureScale;
-            }
+            case ThrowState.Positioning:
+                if (!mouse.leftButton.isPressed)
+                {
+                    State = ThrowState.Idle;
+                    break;
+                }
+                if (_dragStartPos.y - pos.y >= backswingThresholdPx)
+                {
+                    _oscillationTimer = 0f;
+                    _lowestY = pos.y;
+                    State = ThrowState.Oscillating;
+                }
+                break;
+
+            case ThrowState.Oscillating:
+                if (!mouse.leftButton.isPressed)
+                {
+                    State = ThrowState.Idle;
+                    break;
+                }
+                if (pos.y < _lowestY)
+                    _lowestY = pos.y;
+
+                _oscillationTimer += Time.deltaTime;
+                ThrowPowerNormalized = Mathf.PingPong(_oscillationTimer * oscillationSpeed * 2f, 1f);
+
+                // 앞으로 밀기 시작 → ForwardDrag
+                if (pos.y - _lowestY >= forwardThresholdPx)
+                {
+                    _forwardPoints.Clear();
+                    _forwardPoints.Add(pos);
+                    State = ThrowState.ForwardDrag;
+                }
+                break;
+
+            case ThrowState.ForwardDrag:
+                if (mouse.leftButton.wasReleasedThisFrame)
+                {
+                    SpinNormalized = ComputeSpin();
+                    State = ThrowState.Done;
+                    break;
+                }
+                if (!mouse.leftButton.isPressed)
+                {
+                    State = ThrowState.Idle;
+                    break;
+                }
+                // 포인트 샘플링
+                if (_forwardPoints.Count == 0 ||
+                    Vector2.Distance(pos, _forwardPoints[_forwardPoints.Count - 1]) >= sampleThreshold)
+                {
+                    _forwardPoints.Add(pos);
+                }
+                break;
+
+            case ThrowState.Done:
+                break;
+        }
+    }
+
+    /// <summary>앞 드래그 궤적의 부호 있는 평균 곡률 [-1,1]을 반환한다.</summary>
+    private float ComputeSpin()
+    {
+        if (_forwardPoints.Count < 3) return 0f;
+
+        float crossSum = 0f;
+        int count = 0;
+        for (int i = 1; i < _forwardPoints.Count - 1; i++)
+        {
+            Vector2 a = _forwardPoints[i]     - _forwardPoints[i - 1];
+            Vector2 b = _forwardPoints[i + 1] - _forwardPoints[i];
+            float denom = a.magnitude * b.magnitude;
+            if (denom < 0.0001f) continue;
+
+            // 2D 외적: 양수 = 반시계 회전, 음수 = 시계 회전
+            float cross = a.x * b.y - a.y * b.x;
+            crossSum += cross / denom;
+            count++;
         }
 
-        float finalAngle = baseAngle + curvatureOffset;
-        var dir = new Vector2(
-            Mathf.Cos(finalAngle * Mathf.Deg2Rad),
-            Mathf.Sin(finalAngle * Mathf.Deg2Rad)
-        );
-
-        return (dir, finalAngle);
+        return count == 0 ? 0f : Mathf.Clamp(crossSum / count, -1f, 1f);
     }
 
-    /// <summary>
-    /// 최근 recentPointCount 구간의 픽셀/초 평균 속도를 [0,1]로 정규화해 반환.
-    /// </summary>
-    private float ComputeThrowSpeedNormalized()
-    {
-        int start = Mathf.Max(0, _points.Count - recentPointCount - 1);
-        float totalDist = 0f;
-        for (int i = start; i < _points.Count - 1; i++)
-            totalDist += Vector2.Distance(_points[i], _points[i + 1]);
-
-        float timeSpan = _timestamps[_timestamps.Count - 1] - _timestamps[start];
-        if (timeSpan < 0.0001f) return 0f;
-
-        float rawSpeed = totalDist / timeSpan; // px/s
-        return Mathf.Clamp01(Mathf.InverseLerp(minSpeedPx, maxSpeedPx, rawSpeed));
-    }
-
-    // ────────────────────────────────────────────────────────────
-    // 시각화 (테스트용 OnGUI)
-    // ────────────────────────────────────────────────────────────
+    // ── 시각화 ──────────────────────────────────────────────────────────────────
 
     private void OnGUI()
     {
-        // 메인메뉴/설정/도감/정비 화면 등 실제 투구 중이 아닐 때는 이 디버그 표시가 필요 없다.
-        if (StageManager.Instance == null || !StageManager.Instance.IsPlaying)
-            return;
+        if (IsMenuActive || State == ThrowState.Idle) return;
 
-        if (_labelStyle == null)
+        EnsureStyles();
+
+        Vector2 origin = ToGUI(CurrentMousePos);
+        float power = ThrowPowerNormalized;
+
+        Color arrowColor = State == ThrowState.Positioning
+            ? Color.white
+            : Color.Lerp(Color.green, Color.red, power);
+
+        // 화살표
+        float arrowLen = State == ThrowState.Positioning
+            ? maxArrowLengthPx * 0.25f
+            : maxArrowLengthPx * power;
+
+        var guiDir = new Vector2(0f, -1f).normalized;
+        Vector2 tip = origin + guiDir * arrowLen;
+
+        if (arrowLen > 1f)
         {
-            _labelStyle = new GUIStyle(GUI.skin.label)
+            DrawLine(origin, tip, arrowColor, 4f);
+            if (arrowLen > 20f)
             {
-                fontStyle = FontStyle.Bold,
-                fontSize = 14
-            };
+                Vector2 headL = (Vector2)(Quaternion.Euler(0f, 0f,  25f) * -(Vector3)(guiDir * 14f));
+                Vector2 headR = (Vector2)(Quaternion.Euler(0f, 0f, -25f) * -(Vector3)(guiDir * 14f));
+                DrawLine(tip, tip + headL, arrowColor, 3f);
+                DrawLine(tip, tip + headR, arrowColor, 3f);
+            }
         }
 
-        // 드래그 궤적
-        if (_points.Count >= 2)
+        // ForwardDrag 궤적 표시
+        if (State == ThrowState.ForwardDrag && _forwardPoints.Count >= 2)
         {
-            for (int i = 0; i < _points.Count - 1; i++)
-                DrawLine(ToGUI(_points[i]), ToGUI(_points[i + 1]), trajectoryColor, 2f);
+            for (int i = 0; i < _forwardPoints.Count - 1; i++)
+                DrawLine(ToGUI(_forwardPoints[i]), ToGUI(_forwardPoints[i + 1]), Color.cyan, 3f);
         }
 
-        // 방향 화살표
-        if (HasResult && _points.Count > 0)
+        // 상태 텍스트
+        string label;
+        Color labelColor;
+        switch (State)
         {
-            Vector2 origin = ToGUI(_points[_points.Count - 1]);
-            // OnGUI는 Y축 반전이므로 방향 벡터의 Y를 뒤집음
-            var guiDir = new Vector2(ThrowDirectionScreen.x, -ThrowDirectionScreen.y);
-            Vector2 tip = origin + guiDir * arrowLength;
-
-            DrawLine(origin, tip, directionColor, 3f);
-
-            // 화살촉
-            Vector2 headL = (Vector2)(Quaternion.Euler(0f, 0f, 25f) * (-guiDir * 18f));
-            Vector2 headR = (Vector2)(Quaternion.Euler(0f, 0f, -25f) * (-guiDir * 18f));
-            DrawLine(tip, tip + headL, directionColor, 3f);
-            DrawLine(tip, tip + headR, directionColor, 3f);
-
-            _labelStyle.normal.textColor = directionColor;
-            GUI.Label(
-                new Rect(10, Screen.height - 50, 700, 30),
-                $"투구 각도: {ThrowAngleDeg:F1}°  |  방향: ({ThrowDirectionScreen.x:F2}, {ThrowDirectionScreen.y:F2})  |  속도: {ThrowSpeedNormalized:F2}",
-                _labelStyle);
+            case ThrowState.Positioning:
+                label = "좌우로 위치 조정 후, 뒤로 당기세요";
+                labelColor = Color.white;
+                break;
+            case ThrowState.Oscillating:
+                label = $"파워: {power * 100f:F0}%  |  앞으로 밀어 스핀 결정";
+                labelColor = arrowColor;
+                break;
+            case ThrowState.ForwardDrag:
+                label = $"파워: {power * 100f:F0}%  |  ( ) 모양으로 스핀 조절  |  놓으면 발사";
+                labelColor = Color.cyan;
+                break;
+            default: // Done
+                string spinText = Mathf.Abs(SpinNormalized) < 0.05f ? "없음"
+                    : SpinNormalized > 0 ? $"← {SpinNormalized * 100f:F0}%"
+                    : $"→ {-SpinNormalized * 100f:F0}%";
+                label = $"파워: {power * 100f:F0}%  |  스핀: {spinText}";
+                labelColor = arrowColor;
+                break;
         }
-
-        // 상태 안내
-        string status = _isDragging
-            ? "드래그 중..."
-            : HasResult
-                ? "릴리즈 완료 — 다시 드래그하면 초기화"
-                : "마우스 왼쪽 버튼을 누른 채 드래그하세요";
-
-        _labelStyle.normal.textColor = Color.white;
-        GUI.Label(new Rect(10, 10, 500, 25), status, _labelStyle);
+        _labelStyle.normal.textColor = labelColor;
+        GUI.Label(new Rect(10, 10, 600, 28), label, _labelStyle);
     }
 
-    /// <summary>마우스 스크린 좌표(하단-좌측 원점) → OnGUI 좌표(상단-좌측 원점) 변환</summary>
+    private void EnsureStyles()
+    {
+        if (_labelStyle != null) return;
+        _labelStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontStyle = FontStyle.Bold,
+            fontSize  = 16
+        };
+    }
+
     private static Vector2 ToGUI(Vector2 screenPos)
         => new Vector2(screenPos.x, Screen.height - screenPos.y);
 
@@ -332,18 +283,14 @@ public class ThrowInputHandler : MonoBehaviour
             _lineTex.Apply();
         }
 
-        Color savedColor = GUI.color;
+        Color saved = GUI.color;
         GUI.color = color;
-
         Vector2 d = to - from;
         float angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
-        float length = d.magnitude;
-
         Matrix4x4 savedMatrix = GUI.matrix;
         GUIUtility.RotateAroundPivot(angle, from);
-        GUI.DrawTexture(new Rect(from.x, from.y - width * 0.5f, length, width), _lineTex);
+        GUI.DrawTexture(new Rect(from.x, from.y - width * 0.5f, d.magnitude, width), _lineTex);
         GUI.matrix = savedMatrix;
-
-        GUI.color = savedColor;
+        GUI.color = saved;
     }
 }
