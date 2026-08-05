@@ -13,6 +13,8 @@ public class BallMagnusEffect : MonoBehaviour
 {
     [Tooltip("Magnus 횡력 배율. 값이 클수록 궤적이 더 크게 휜다.")]
     [SerializeField] private float magnusCoeff = 0.3f;
+    [Tooltip("커브 세기를 정규화하는 기준 질량(기본 9파운드 공의 질량). 공이 이보다 무거우면 관성이 커서 덜 휘고, 가벼우면 더 잘 휜다.")]
+    [SerializeField] private float referenceMass = 7f;
     [Tooltip("횡력 방향이 반대로 느껴질 경우 체크.")]
     [SerializeField] private bool invertSpin = false;
 
@@ -54,8 +56,16 @@ public class BallMagnusEffect : MonoBehaviour
     // 레인과 접촉 중일 때만 힘을 적용해 공중 낙하 시 간섭하지 않는다.
     private void OnCollisionStay(Collision collision)
     {
-        // ω × v : Y축 스핀 + 전진 → 측면 힘 발생
-        Vector3 force = Vector3.Cross(_rb.angularVelocity, _rb.linearVelocity) * magnusCoeff;
+        // 공이 굴러가는 동안 자연스럽게 생기는 X축 회전(구름 스핀)까지 angularVelocity에
+        // 섞여 있어서, 전체 벡터로 외적을 구하면 "구름 스핀 × 전진속도"가 의도치 않은
+        // 수직(Y축) 힘을 만들어내 공이 계속 튀어 오르는 문제가 있었다.
+        // 커브(훅)에 실제로 의미가 있는 건 Y축(좌우 회전) 스핀뿐이므로 그 성분만 분리해서 쓴다.
+        float curveSpin = _rb.angularVelocity.y;
+
+        // 공이 무거울수록 같은 스핀이라도 궤적을 덜 휘게(관성이 크므로) 만든다.
+        // referenceMass(기본 9파운드)를 기준으로 정규화 - 기준 질량인 공은 기존과 동일하게 동작한다.
+        float massRatio = referenceMass / Mathf.Max(_rb.mass, 0.01f);
+        Vector3 force = Vector3.Cross(Vector3.up * curveSpin, _rb.linearVelocity) * magnusCoeff * massRatio;
 
         if (invertSpin)
             force = -force;

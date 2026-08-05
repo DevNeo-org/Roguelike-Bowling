@@ -132,8 +132,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd91f6de159a92046a736d588040e700, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BowlingPin
-  fallAngleThreshold: 40
-  displacementThreshold: 0.08
+  fallAngleThreshold: 18
+  displacementThreshold: 0.18
   gracePeriod: 0.3
 --- !u!64 &3893710696780516736
 MeshCollider:

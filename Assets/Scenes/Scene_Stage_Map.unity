@@ -6796,50 +6796,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 586563682}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &597195378
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 597195380}
-  - component: {fileID: 597195379}
-  m_Layer: 0
-  m_Name: SkillManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &597195379
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 597195378}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74630804c7fe8c04c8f49eeb6d881000, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SkillManager
---- !u!4 &597195380
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 597195378}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &621313410
 GameObject:
   m_ObjectHideFlags: 0
@@ -10542,7 +10498,6 @@ MonoBehaviour:
   panel: {fileID: 563094891}
   toggleButton: {fileID: 1153827265}
   inventoryListContainer: {fileID: 314099346}
-  skillListContainer: {fileID: 1804056044}
   rowPrefab: {fileID: 8985481295042288020, guid: 66e768cecc0110c46a16dd9055fbb152, type: 3}
 --- !u!1 &1033293132
 GameObject:
@@ -15914,6 +15869,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LaneFrictionZone
   rollingResistanceCoefficient: 0.3
+  referenceMass: 7
 --- !u!23 &1455626357
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -16895,6 +16851,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LaneFrictionZone
   rollingResistanceCoefficient: 1
+  referenceMass: 7
 --- !u!23 &1566063068
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -23592,6 +23549,9 @@ MonoBehaviour:
   maxLaunchSpeed: 10
   armRadius: 1.5
   spinScale: 10
+  referenceMass: 7
+  weightSpeedInfluence: 0.1
+  weightSpeedFactorRange: {x: 0.85, y: 1.15}
   _mainMenuUI: {fileID: 99278979}
 --- !u!1 &2090563130
 GameObject:
@@ -24125,6 +24085,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LaneFrictionZone
   rollingResistanceCoefficient: 0.05
+  referenceMass: 7
 --- !u!1001 &3219996807232489484
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -24220,6 +24181,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LaneFrictionZone
   rollingResistanceCoefficient: 1
+  referenceMass: 7
 --- !u!1001 &6410379693703269598
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -24319,6 +24281,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LaneFrictionZone
   rollingResistanceCoefficient: 4.5
+  referenceMass: 7
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -24331,6 +24294,5 @@ SceneRoots:
   - {fileID: 367126065}
   - {fileID: 1700509110}
   - {fileID: 1885764593}
-  - {fileID: 597195380}
   - {fileID: 970216844}
   - {fileID: 1048426062}

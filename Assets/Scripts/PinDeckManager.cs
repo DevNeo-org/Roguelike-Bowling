@@ -88,6 +88,18 @@ public class PinDeckManager : MonoBehaviour
         float elapsed = 0f;
         float settleCheckInterval = 0.1f;
         float stillTimeRequired = 0.5f;
+
+        // 핀이 거의 다 넘어간 지점 근처에서는 아주 느리게(중력만으로) 계속 기울어지는
+        // 구간이 있는데, 이때 순간 각속도가 "정지" 기준(0.1 rad/s) 밑으로 잠깐 떨어질 수
+        // 있다 - 속도만 보면 아직 쓰러지는 중인 핀을 "다 멈췄다"고 오판해서 실제로 넘어지기
+        // 직전에 판정을 끝내버리는 문제가 있었다. 그래서 속도뿐 아니라 각 핀의 기울기 각도가
+        // 체크 간격 사이에 실제로 변하고 있는지도 같이 봐서, 여전히 기울어지는 중이면
+        // (속도가 낮아 보여도) 아직 정지하지 않은 것으로 취급한다.
+        float angleChangeThreshold = 1.5f;
+        var lastAngle = new Dictionary<BowlingPin, float>();
+        foreach (BowlingPin p in pins)
+            lastAngle[p] = Vector3.Angle(p.transform.up, Vector3.up);
+
         float stillTimer = 0f;
 
         while (elapsed < maxWait)
@@ -96,8 +108,14 @@ public class PinDeckManager : MonoBehaviour
             foreach (BowlingPin p in pins)
             {
                 Rigidbody rb = p.GetComponent<Rigidbody>();
-                if (rb != null && !rb.IsSleeping() &&
-                    (rb.linearVelocity.magnitude > 0.05f || rb.angularVelocity.magnitude > 0.1f))
+                bool velocityLow = rb == null || rb.IsSleeping() ||
+                    (rb.linearVelocity.magnitude <= 0.05f && rb.angularVelocity.magnitude <= 0.1f);
+
+                float currentAngle = Vector3.Angle(p.transform.up, Vector3.up);
+                bool angleStable = Mathf.Abs(currentAngle - lastAngle[p]) <= angleChangeThreshold;
+                lastAngle[p] = currentAngle;
+
+                if (!velocityLow || !angleStable)
                 {
                     allSettled = false;
                     break;

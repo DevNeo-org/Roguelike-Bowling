@@ -1472,7 +1472,8 @@ PrefabInstance:
       value: StageUI
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6821055090845407059, guid: 7be6f65f59bf835488365e5ec37b808d, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7be6f65f59bf835488365e5ec37b808d, type: 3}
@@ -1758,10 +1759,22 @@ MonoBehaviour:
   launchSpeed: 8
   ballMass: 7
   ballDiameter: 0.22
+  ballColor: {r: 0.15, g: 0.35, b: 0.95, a: 1}
   startY: 0.14
   startZ: 0.5
+  ballPrefab: {fileID: 0}
+  playerAnimator: {fileID: 0}
+  throwReleaseDelay: 0.85
   maxSidewaysSpeed: 2.2
   speedVariance: 1
+  bananaPeelPrefabPath: Assets/Prefabs/Obstacles/BananaPeel.prefab
+  rockPrefabPath: Assets/Prefabs/Obstacles/Rock.prefab
+  obstaclesParentName: Obstacles
+  bananaPeelColor: {r: 0.95, g: 0.5, b: 0.05, a: 1}
+  rockColor: {r: 0.35, g: 0.3, b: 0.28, a: 1}
+  obstacleZMin: 3
+  obstacleZMax: 14
+  obstacleXRange: 0.35
 --- !u!4 &1048426062
 Transform:
   m_ObjectHideFlags: 0
