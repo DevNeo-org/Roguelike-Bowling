@@ -1,10 +1,13 @@
 using System;
 using UnityEngine;
 
-// Controls which lane is active based on the current stage number.
-// Normal stages use the basic (wood) lane. Every 5th stage is a "boss
-// stage" that swaps in one of the special lanes (Ice/Sand/Magma/Trampoline)
-// instead of the basic lane.
+// Was previously used to show/hide individual lanes so only one was ever
+// active at a time. The current design (1 stage = 1 place + 5 lane
+// variations, all visible together) no longer wants that auto-hiding,
+// so ApplyStage() no longer touches any GameObject's active state.
+// ActiveLaneKey / CurrentStage are kept for now since other systems
+// (TestThrowController, obstacle spawning) still read ActiveLaneKey as
+// a fallback default.
 public class LaneStageManager : MonoBehaviour
 {
     public static LaneStageManager Instance { get; private set; }
@@ -63,34 +66,13 @@ public class LaneStageManager : MonoBehaviour
 
         ActiveLaneKey = activeLaneKey;
 
-        SetLaneActive(basicKey, activeLaneKey == basicKey);
-        foreach (string key in specialLaneKeys)
-            SetLaneActive(key, activeLaneKey == key);
+        // NOTE: no longer calling SetLaneActive here - all 5 lanes of the
+        // current place/stage stay visible together now.
 
         Debug.Log("[LaneStageManager] Stage " + CurrentStage +
             (IsBossStage(CurrentStage) ? " (보스 스테이지)" : "") +
-            " -> 활성 레인: " + activeLaneKey);
+            " -> 기본 선택 레인: " + activeLaneKey);
 
         OnStageChanged?.Invoke(CurrentStage, activeLaneKey);
-    }
-
-    private void SetLaneActive(string key, bool active)
-    {
-        GameObject mapRoot = GameObject.Find(mapRootName);
-        if (mapRoot == null) return;
-
-        Transform[] all = mapRoot.GetComponentsInChildren<Transform>(true);
-        foreach (Transform t in all)
-        {
-            string n = t.name;
-            bool matches = n.Contains("_" + key) || n == "Lane_" + key;
-
-            // The magma fire visual doesn't follow the naming convention.
-            if (key == "Magma" && n == "FireVisual")
-                matches = true;
-
-            if (matches)
-                t.gameObject.SetActive(active);
-        }
     }
 }
