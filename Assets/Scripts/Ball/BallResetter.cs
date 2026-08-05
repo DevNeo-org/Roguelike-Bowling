@@ -10,12 +10,6 @@ public class BallResetter : MonoBehaviour
     [Tooltip("이 시간(초)이 지나면 낙하 여부와 관계없이 리스폰")]
     [SerializeField] private float respawnTimeout = 10f;
 
-    [Header("Stop Detection")]
-    [Tooltip("이 속도(m/s) 이하면 정지로 판정")]
-    [SerializeField] private float stopSpeedThreshold = 0.15f;
-    [Tooltip("정지 판정 후 이 시간(초)이 지나면 리스폰")]
-    [SerializeField] private float stopRespawnDelay = 1f;
-
     private BallSpawner _spawner;
     private Rigidbody _rb;
     private bool _triggered;
@@ -23,7 +17,6 @@ public class BallResetter : MonoBehaviour
 
     // BallLauncher가 Launch() 호출 후 SetLaunched()로 명시적으로 활성화
     private bool _hasLaunched;
-    private float _stopTimer;
 
     /// <summary>BallSpawner가 생성 직후 호출해 참조를 주입한다.</summary>
     public void Init(BallSpawner spawner)
@@ -81,6 +74,7 @@ public class BallResetter : MonoBehaviour
     public void SetLaunched()
     {
         _hasLaunched = true;
+        GetComponent<BallFinishWatcher>()?.SetLaunched();
     }
 
     private void Update()

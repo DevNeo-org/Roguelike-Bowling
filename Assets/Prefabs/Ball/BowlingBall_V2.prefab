@@ -159,8 +159,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BallResetter
   fallThreshold: -3
   respawnTimeout: 10
-  stopSpeedThreshold: 0.15
-  stopRespawnDelay: 1
 --- !u!114 &2056307085531689644
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -173,10 +171,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bab16ffb466b96941adf8326603b2c41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallMagnusEffect
-  magnusCoeff: 0.2
+  magnusCoeff: 0.1
   invertSpin: 1
   showForwardArrow: 1
-  arrowLength: 0.5
+  arrowLength: 0.2
+  arrowColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &6366178080433528413
 GameObject:
   m_ObjectHideFlags: 0
