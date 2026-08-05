@@ -84,7 +84,6 @@ public class BallLauncher : MonoBehaviour
         _ball.linearVelocity  = worldDir * speed;
         _ball.angularVelocity = Vector3.up * _input.SpinNormalized * spinScale;
 
-        Debug.Log($"[투구] 파워: {_input.ThrowPowerNormalized:F2} | 속도: {speed:F1} m/s | 스핀: {_input.SpinNormalized:F3} | angularVel: {_ball.angularVelocity}");
 
         _ballResetter?.SetLaunched();
     }
@@ -95,16 +94,12 @@ public class BallLauncher : MonoBehaviour
         _ball = rb;
         _ballResetter = rb != null ? rb.GetComponent<BallResetter>() : null;
         if (rb != null)
-        {
             _spawnPosition = rb.position;
-            rb.isKinematic = true; // 발사 전까지 중력/물리 정지
-        }
     }
 
     /// <summary>BallSpawner가 공 생성 완료 후 호출 — 다음 투구를 허용한다.</summary>
     public void ResetLaunch()
     {
         _canLaunch = true;
-        Debug.Log("[투구] 재투구 대기 중");
     }
 }

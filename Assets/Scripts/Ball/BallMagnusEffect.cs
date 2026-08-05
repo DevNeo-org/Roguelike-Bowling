@@ -61,7 +61,6 @@ public class BallMagnusEffect : MonoBehaviour
             force = -force;
 
         _rb.AddForce(force, ForceMode.Acceleration);
-        Debug.Log($"[Magnus] 충돌: {collision.gameObject.name} | 힘: {force} | angVel: {_rb.angularVelocity.y:F2}");
     }
 
     private void Update()
