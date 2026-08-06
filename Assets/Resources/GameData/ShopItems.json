@@ -1,9 +1,15 @@
 {
   "items": [
-    { "name": "무거운 공", "description": "파괴력이 강해지지만 속도가 느려집니다.", "price": 200, "icon": "icon_ball" },
-    { "name": "가벼운 공", "description": "속도가 빨라지지만 파괴력이 약해집니다.", "price": 200, "icon": "icon_ball" },
-    { "name": "스핀 아대", "description": "공의 스핀(회전)이 강해집니다.", "price": 150, "icon": "icon_glove" },
+    { "name": "가동 범위 확장 벨트", "description": "공을 조준할 때 좌우로 움직일 수 있는 범위가 넓어집니다.", "price": 150, "icon": "icon_throw" },
+    { "name": "밸런스화", "description": "드래그 중 손떨림을 보정해 조준이 안정됩니다.", "price": 140, "icon": "icon_shoes" },
+    { "name": "무거운 공", "description": "파괴력이 강해지지만, 게이지가 속도로 전환되는 비율이 낮아져 속도가 느려집니다.", "price": 200, "icon": "icon_ball" },
+    { "name": "경량코팅볼", "description": "속도가 빨라지지만 파괴력이 약해집니다.", "price": 200, "icon": "icon_ball" },
     { "name": "미끄럼 방지 장갑", "description": "투구 파워의 최소 하한선이 높아집니다.", "price": 150, "icon": "icon_glove" },
-    { "name": "볼링화(안정성 강화)", "description": "투구 시 안정성이 강화됩니다.", "price": 130, "icon": "icon_shoes" }
+    { "name": "장애물 파괴 볼", "description": "장애물과 부딪히면 장애물을 파괴합니다. (1회용)", "price": 250, "icon": "icon_strength" },
+    { "name": "장애물 통과 볼", "description": "장애물에 닿아도 곡률·방향·속도가 변하지 않습니다.", "price": 280, "icon": "icon_ball" },
+    { "name": "스핀 아대", "description": "공의 스핀(회전)이 강해집니다.", "price": 150, "icon": "icon_glove" },
+    { "name": "스트레이트 슈즈", "description": "궤적이 직선으로 고정되어 곡률 입력이 무시됩니다.", "price": 170, "icon": "icon_shoes" },
+    { "name": "낡은 수건", "description": "공 표면의 오일을 제거해 곡률이 더 일찍부터 반영됩니다.", "price": 160, "icon": "icon_towel" },
+    { "name": "왁스 코팅 타월", "description": "공 표면을 매끄럽게 코팅해 곡률이 더 늦게 반영됩니다.", "price": 160, "icon": "icon_towel" }
   ]
 }

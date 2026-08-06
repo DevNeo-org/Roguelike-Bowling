@@ -20,6 +20,14 @@ public class BallLauncher : MonoBehaviour
     [Tooltip("SpinNormalized(±1)에 곱해 angularVelocity(rad/s)로 변환. 값이 클수록 더 크게 휨.")]
     [SerializeField] private float spinScale = 10f;
 
+    [Header("Weight Effect")]
+    [Tooltip("발사 속도 보정 기준 질량(기본 9파운드 공의 질량).")]
+    [SerializeField] private float referenceMass = 7f;
+    [Tooltip("기준 질량 대비 무게 편차 비율 1.0(=100% 초과)당 속도를 얼마나 줄이거나 늘릴지. 작게 유지해 무게 때문에 너무 느려지거나 빨라지지 않게 한다.")]
+    [SerializeField] private float weightSpeedInfluence = 0.1f;
+    [Tooltip("무게 보정으로 속도가 변할 수 있는 최대/최소 배율 범위.")]
+    [SerializeField] private Vector2 weightSpeedFactorRange = new Vector2(0.85f, 1.15f);
+
     [Header("UI Block")]
     [Tooltip("이 UI가 활성화되어 있으면 조작을 차단합니다 (예: MainMenuUI)")]
     [SerializeField] private GameObject _mainMenuUI;
@@ -78,6 +86,13 @@ public class BallLauncher : MonoBehaviour
         _ball.isKinematic = false;
 
         float speed = Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, _input.ThrowPowerNormalized);
+
+        // 무게에 따라 속도를 살짝만 보정한다 (무거우면 약간 느리게, 가벼우면 약간 빠르게).
+        // 체감이 크지 않도록 weightSpeedInfluence/range로 폭을 좁게 제한한다.
+        float massDeviation = (_ball.mass - referenceMass) / referenceMass;
+        float speedFactor = Mathf.Clamp(1f - massDeviation * weightSpeedInfluence,
+            weightSpeedFactorRange.x, weightSpeedFactorRange.y);
+        speed *= speedFactor;
 
         Vector3 worldDir = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
 

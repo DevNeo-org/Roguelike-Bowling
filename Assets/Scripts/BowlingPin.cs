@@ -8,8 +8,8 @@ using UnityEngine;
 // while the pin is still tumbling/wobbling from an impact.
 public class BowlingPin : MonoBehaviour
 {
-    [SerializeField] private float fallAngleThreshold = 40f;
-    [SerializeField] private float displacementThreshold = 0.08f;
+    [SerializeField] private float fallAngleThreshold = 18f;
+    [SerializeField] private float displacementThreshold = 0.18f;
     [SerializeField] private float gracePeriod = 0.3f;
 
     private Vector3 initialPosition;
@@ -47,9 +47,12 @@ public class BowlingPin : MonoBehaviour
         // 무게중심을 바닥 쪽으로 너무 낮추면(예전 -0.3, -0.15 모두) 밑동이 힌지처럼 고정된 채
         // 머리 쪽만 위로 들린 상태로 쓰러져 버린다 - 기하학적 중심에 가깝게 되돌려서
         // 쓰러졌을 때 몸통 전체가 바닥에 눕도록 했다.
+        // 기하학적 중심(0)보다 살짝 위(0.05)로 두면 무게중심이 받침점(바닥 접점) 위로 더 높이
+        // 있게 되어 같은 충격에도 실제 볼링 핀처럼 임계 전도각을 더 쉽게 넘어 확실히 쓰러진다.
+        // 너무 높이면 쉽게 넘어지다 못해 살짝만 스쳐도 넘어지므로 0.05로 소폭만 조정했다.
         if (rb != null)
         {
-            rb.centerOfMass = new Vector3(0f, 0f, 0f);
+            rb.centerOfMass = new Vector3(0f, 0.05f, 0f);
 
             // MeshCollider(convex)의 평평한 밑면이 레인 바닥의 평평한 면과 맞닿으면 접촉점이
             // 여러 개 잡혀서 PhysX가 매 프레임 미세하게 다르게 풀어내며 계속 떨리는 현상이 생긴다.
