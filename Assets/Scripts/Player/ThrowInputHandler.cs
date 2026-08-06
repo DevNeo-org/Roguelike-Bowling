@@ -21,7 +21,11 @@ public class ThrowInputHandler : MonoBehaviour
 
     [Header("Oscillation")]
     [Tooltip("파워 진동 속도 (값이 클수록 빠름)")]
-    [SerializeField] private float oscillationSpeed = 1.2f;
+    [SerializeField] private float oscillationSpeed = 0.6f;
+    [Tooltip("실제 파워(ThrowPowerNormalized)가 최대가 되는 스윙 지점(0~1). 0.5면 스윙 정중앙에서 최대.")]
+    [SerializeField, Range(0.1f, 0.9f)] private float powerPeakPosition = 0.5f;
+    [Tooltip("최대 파워 구간의 폭. 0.1이면 0.4~0.6 구간 전체가 최대 파워.")]
+    [SerializeField, Range(0.01f, 0.4f)] private float powerPeakHalfWidth = 0.1f;
 
     [Header("Forward Drag")]
     [Tooltip("진동 중 가장 아래 지점에서 이 픽셀 이상 위로 올라오면 앞 드래그 시작")]
@@ -32,9 +36,6 @@ public class ThrowInputHandler : MonoBehaviour
     [SerializeField] private float spinSensitivity = 5f;
     [Tooltip("시작~끝을 잇는 직선 대비 부풀어진 정도(궤적 길이 대비 비율)가 이 값 미만이면 스핀 0으로 처리. 손떨림으로 대각선 직선 드래그에도 스핀이 살짝 들어가는 걸 방지.")]
     [SerializeField] private float straightnessDeadZone = 0.04f;
-
-    [Header("Visualization")]
-    [SerializeField] private float maxArrowLengthPx = 160f;
 
     [Header("Debug")]
     [Tooltip("테스트용: 파워를 항상 99%로 고정한다.")]
@@ -47,8 +48,15 @@ public class ThrowInputHandler : MonoBehaviour
     public ThrowState State { get; private set; } = ThrowState.Idle;
     public bool HasResult => State == ThrowState.Done;
 
-    /// <summary>파워 [0,1]. Oscillating에서 확정.</summary>
+    /// <summary>
+    /// 실제 투구 파워 [0,1]. Oscillating에서 확정. powerPeakPosition(스윙 중앙 기준)에서
+    /// 최대가 되고 양 끝(스윙 시작/끝)에 가까울수록 줄어든다 — 실제 투구 속도와 표시되는
+    /// 퍼센트 텍스트 모두 이 값을 그대로 쓴다.
+    /// </summary>
     public float ThrowPowerNormalized { get; private set; }
+
+    /// <summary>스윙 진행도 [0,1]. Oscillating 중 PingPong, 재형태화 없는 원본 값. 게이지 fillAmount 표시용.</summary>
+    public float SwingPhaseNormalized { get; private set; }
 
     /// <summary>
     /// 스핀 [-1,1]. 앞 드래그 궤적의 곡률로 결정.
@@ -90,6 +98,7 @@ public class ThrowInputHandler : MonoBehaviour
     {
         State = ThrowState.Idle;
         ThrowPowerNormalized = 0f;
+        SwingPhaseNormalized = 0f;
         SpinNormalized = 0f;
         InitialDragDirection = Vector2.up;
         _oscillationTimer = 0f;
@@ -140,7 +149,8 @@ public class ThrowInputHandler : MonoBehaviour
                     _lowestY = pos.y;
 
                 _oscillationTimer += Time.deltaTime;
-                ThrowPowerNormalized = debugForcePower99 ? 0.99f : Mathf.PingPong(_oscillationTimer * oscillationSpeed * 2f, 1f);
+                SwingPhaseNormalized = Mathf.PingPong(_oscillationTimer * oscillationSpeed * 2f, 1f);
+                ThrowPowerNormalized = debugForcePower99 ? 0.99f : ComputeSweetSpotPower(SwingPhaseNormalized);
 
                 // 앞으로 밀기 시작 → ForwardDrag
                 if (pos.y - _lowestY >= forwardThresholdPx)
@@ -187,6 +197,19 @@ public class ThrowInputHandler : MonoBehaviour
     }
 
     /// <summary>
+    /// 스윙 진행도(swingPhase, 0~1)를 powerPeakPosition 기준 파워 [0,1]로 변환한다.
+    /// peakPosition에서 1이 되고, 양 끝(0 또는 1)까지 대칭으로 0에 떨어진다.
+    /// </summary>
+    private float ComputeSweetSpotPower(float swingPhase)
+    {
+        float dist = Mathf.Abs(swingPhase - powerPeakPosition);
+        if (dist <= powerPeakHalfWidth) return 1f;
+
+        float maxDist = swingPhase < powerPeakPosition ? powerPeakPosition : 1f - powerPeakPosition;
+        return 1f - Mathf.InverseLerp(powerPeakHalfWidth, maxDist, dist);
+    }
+
+    /// <summary>
     /// 앞 드래그 궤적이 시작~끝을 잇는 직선 대비 얼마나 옆으로 부풀었는지로 곡률 [-1,1]을 구한다.
     /// 완전한 대각선 직선 드래그(부풀음 없음)는 손떨림이 있어도 데드존 이하로 걸러져 스핀 0이 된다.
     /// </summary>
@@ -228,32 +251,11 @@ public class ThrowInputHandler : MonoBehaviour
 
         EnsureStyles();
 
-        Vector2 origin = ToGUI(CurrentMousePos);
         float power = ThrowPowerNormalized;
 
         Color arrowColor = State == ThrowState.Positioning
             ? Color.white
             : Color.Lerp(Color.green, Color.red, power);
-
-        // 화살표
-        float arrowLen = State == ThrowState.Positioning
-            ? maxArrowLengthPx * 0.25f
-            : maxArrowLengthPx * power;
-
-        var guiDir = new Vector2(0f, -1f).normalized;
-        Vector2 tip = origin + guiDir * arrowLen;
-
-        if (arrowLen > 1f)
-        {
-            DrawLine(origin, tip, arrowColor, 4f);
-            if (arrowLen > 20f)
-            {
-                Vector2 headL = (Vector2)(Quaternion.Euler(0f, 0f,  25f) * -(Vector3)(guiDir * 14f));
-                Vector2 headR = (Vector2)(Quaternion.Euler(0f, 0f, -25f) * -(Vector3)(guiDir * 14f));
-                DrawLine(tip, tip + headL, arrowColor, 3f);
-                DrawLine(tip, tip + headR, arrowColor, 3f);
-            }
-        }
 
         // ForwardDrag 궤적 표시
         if (State == ThrowState.ForwardDrag && _forwardPoints.Count >= 2)
