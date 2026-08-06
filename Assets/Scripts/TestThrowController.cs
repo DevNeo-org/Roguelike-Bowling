@@ -3,8 +3,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Play mode test controller. Multiple separate stages exist side by side in
-// the scene (Mountain at x=-3, Classic bowling alley at x=100, Desert at
-// x=200), each with 5 lanes laid out one after another along Z.
+// the scene (Mountain at x=-3, Field at x=100, Desert at x=200, Ice at
+// x=300, Volcano at x=400), each with 5 lanes laid out one after another
+// along Z.
 // Space: launch a ball down the selected lane
 // R: remove any leftover test balls
 // E: spawn a banana peel + rock at random spots on the current lane
@@ -46,8 +47,8 @@ public class TestThrowController : MonoBehaviour
     public float obstacleXRange = 0.35f;
 
     // 스테이지들의 X 좌표, 5개 레인의 중심 Z(모든 스테이지가 같은 Z 패턴을 공유).
-    private static readonly float[] stageX = { -3f, 100f, 200f };
-    private static readonly string[] stageNames = { "산(Mountain)", "볼링장(Classic)", "사막(Desert)" };
+    private static readonly float[] stageX = { -3f, 100f, 200f, 300f, 400f };
+    private static readonly string[] stageNames = { "산(Mountain)", "들판(Field)", "사막(Desert)", "얼음(Ice)", "화산(Volcano)" };
     private static readonly float[] laneCenterZ = { 10.8f, 44.9f, 79.0f, 113.1f, 147.2f };
 
     private int currentStage = 0;
@@ -284,7 +285,7 @@ public class TestThrowController : MonoBehaviour
             "R : 남은 테스트 공 제거\n" +
             "E : 현재 레인에 장애물 랜덤 스폰\n" +
             "1~5 : 레인 이동\n" +
-            "Tab : 스테이지 전환 (산/볼링장/사막)\n" +
+            "Tab : 스테이지 전환 (산/들판/사막/얼음/화산)\n" +
             laneLine);
     }
 }
