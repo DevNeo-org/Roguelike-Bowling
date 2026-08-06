@@ -15,26 +15,31 @@ using UnityEngine.InputSystem;
 // SpinNormalized           : [-1,1] ForwardDrag 궤적 곡률. 양수=반시계(왼쪽 휨), 음수=시계(오른쪽 휨)
 public class ThrowInputHandler : MonoBehaviour
 {
-    [Header("UI Block")]
-    [Tooltip("이 UI가 활성화되어 있으면 입력을 차단합니다 (예: MainMenuUI)")]
-    [SerializeField] private GameObject _mainMenuUI;
-
     [Header("Backswing")]
     [Tooltip("이 픽셀 이상 아래로 드래그하면 파워 진동 시작")]
     [SerializeField] private float backswingThresholdPx = 40f;
 
     [Header("Oscillation")]
     [Tooltip("파워 진동 속도 (값이 클수록 빠름)")]
-    [SerializeField] private float oscillationSpeed = 1.2f;
+    [SerializeField] private float oscillationSpeed = 0.6f;
+    [Tooltip("실제 파워(ThrowPowerNormalized)가 최대가 되는 스윙 지점(0~1). 0.5면 스윙 정중앙에서 최대.")]
+    [SerializeField, Range(0.1f, 0.9f)] private float powerPeakPosition = 0.5f;
+    [Tooltip("최대 파워 구간의 폭. 0.1이면 0.4~0.6 구간 전체가 최대 파워.")]
+    [SerializeField, Range(0.01f, 0.4f)] private float powerPeakHalfWidth = 0.1f;
 
     [Header("Forward Drag")]
     [Tooltip("진동 중 가장 아래 지점에서 이 픽셀 이상 위로 올라오면 앞 드래그 시작")]
     [SerializeField] private float forwardThresholdPx = 20f;
     [Tooltip("앞 드래그 중 포인트 샘플링 최소 거리 (px)")]
     [SerializeField] private float sampleThreshold = 6f;
+    [Tooltip("궤적 곡률에 곱하는 배율. 값이 클수록 같은 드래그로도 스핀이 더 크게 들어감.")]
+    [SerializeField] private float spinSensitivity = 5f;
+    [Tooltip("시작~끝을 잇는 직선 대비 부풀어진 정도(궤적 길이 대비 비율)가 이 값 미만이면 스핀 0으로 처리. 손떨림으로 대각선 직선 드래그에도 스핀이 살짝 들어가는 걸 방지.")]
+    [SerializeField] private float straightnessDeadZone = 0.04f;
 
-    [Header("Visualization")]
-    [SerializeField] private float maxArrowLengthPx = 160f;
+    [Header("Debug")]
+    [Tooltip("테스트용: 파워를 항상 99%로 고정한다.")]
+    [SerializeField] private bool debugForcePower99 = true;
 
     // ── 공개 프로퍼티 ──────────────────────────────────────────────────────────
 
@@ -43,8 +48,15 @@ public class ThrowInputHandler : MonoBehaviour
     public ThrowState State { get; private set; } = ThrowState.Idle;
     public bool HasResult => State == ThrowState.Done;
 
-    /// <summary>파워 [0,1]. Oscillating에서 확정.</summary>
+    /// <summary>
+    /// 실제 투구 파워 [0,1]. Oscillating에서 확정. powerPeakPosition(스윙 중앙 기준)에서
+    /// 최대가 되고 양 끝(스윙 시작/끝)에 가까울수록 줄어든다 — 실제 투구 속도와 표시되는
+    /// 퍼센트 텍스트 모두 이 값을 그대로 쓴다.
+    /// </summary>
     public float ThrowPowerNormalized { get; private set; }
+
+    /// <summary>스윙 진행도 [0,1]. Oscillating 중 PingPong, 재형태화 없는 원본 값. 게이지 fillAmount 표시용.</summary>
+    public float SwingPhaseNormalized { get; private set; }
 
     /// <summary>
     /// 스핀 [-1,1]. 앞 드래그 궤적의 곡률로 결정.
@@ -54,6 +66,19 @@ public class ThrowInputHandler : MonoBehaviour
 
     /// <summary>현재 마우스 스크린 좌표. BallLauncher가 Positioning 중 공 이동에 사용.</summary>
     public Vector2 CurrentMousePos { get; private set; }
+
+    /// <summary>
+    /// 앞으로 드래그를 시작한 첫 구간의 정규화된 방향 (화면 기준, x=오른쪽, y=위).
+    /// 기본값 (0,1)=정면. BallLauncher가 이 방향을 카메라의 정면/오른쪽 축에 그대로 매핑해
+    /// 드래그한 각도 그대로 발사되게 한다.
+    /// </summary>
+    public Vector2 InitialDragDirection { get; private set; } = Vector2.up;
+
+    /// <summary>InitialDragDirection을 정면(위) 기준 부호 있는 각도(도)로 환산. 양수=왼쪽, 음수=오른쪽.</summary>
+    public float InitialDragAngleDeg => Vector2.SignedAngle(Vector2.up, InitialDragDirection);
+
+    /// <summary>Done 상태에서, 곡률이 감지되어 스핀이 걸렸으면 true(커브), 아니면 false(직선 대각선).</summary>
+    public bool IsCurvedDrag => SpinNormalized != 0f;
 
     // ── 내부 상태 ──────────────────────────────────────────────────────────────
 
@@ -73,24 +98,17 @@ public class ThrowInputHandler : MonoBehaviour
     {
         State = ThrowState.Idle;
         ThrowPowerNormalized = 0f;
+        SwingPhaseNormalized = 0f;
         SpinNormalized = 0f;
+        InitialDragDirection = Vector2.up;
         _oscillationTimer = 0f;
         _forwardPoints.Clear();
     }
 
     // ── 입력 처리 ──────────────────────────────────────────────────────────────
 
-    private bool IsMenuActive => _mainMenuUI != null && _mainMenuUI.activeInHierarchy;
-
     private void Update()
     {
-        if (IsMenuActive)
-        {
-            if (State != ThrowState.Idle && State != ThrowState.Done)
-                State = ThrowState.Idle;
-            return;
-        }
-
         var mouse = Mouse.current;
         if (mouse == null) return;
 
@@ -131,7 +149,8 @@ public class ThrowInputHandler : MonoBehaviour
                     _lowestY = pos.y;
 
                 _oscillationTimer += Time.deltaTime;
-                ThrowPowerNormalized = Mathf.PingPong(_oscillationTimer * oscillationSpeed * 2f, 1f);
+                SwingPhaseNormalized = Mathf.PingPong(_oscillationTimer * oscillationSpeed * 2f, 1f);
+                ThrowPowerNormalized = debugForcePower99 ? 0.99f : ComputeSweetSpotPower(SwingPhaseNormalized);
 
                 // 앞으로 밀기 시작 → ForwardDrag
                 if (pos.y - _lowestY >= forwardThresholdPx)
@@ -146,6 +165,12 @@ public class ThrowInputHandler : MonoBehaviour
                 if (mouse.leftButton.wasReleasedThisFrame)
                 {
                     SpinNormalized = ComputeSpin();
+
+                    // 곡률이 감지된 경우(커브)엔 초기 방향 반영은 취소하고 정면으로 발사한다.
+                    // 커브는 스핀(BallMagnusEffect)이 담당 — 직선 드래그일 때만 초기 각도를 반영한다.
+                    if (SpinNormalized != 0f)
+                        InitialDragDirection = Vector2.up;
+
                     State = ThrowState.Done;
                     break;
                 }
@@ -159,6 +184,10 @@ public class ThrowInputHandler : MonoBehaviour
                     Vector2.Distance(pos, _forwardPoints[_forwardPoints.Count - 1]) >= sampleThreshold)
                 {
                     _forwardPoints.Add(pos);
+
+                    // 앞 드래그의 첫 구간 방향을 초기 발사 방향으로 한 번만 확정한다.
+                    if (_forwardPoints.Count == 2)
+                        InitialDragDirection = (_forwardPoints[1] - _forwardPoints[0]).normalized;
                 }
                 break;
 
@@ -167,63 +196,66 @@ public class ThrowInputHandler : MonoBehaviour
         }
     }
 
-    /// <summary>앞 드래그 궤적의 부호 있는 평균 곡률 [-1,1]을 반환한다.</summary>
+    /// <summary>
+    /// 스윙 진행도(swingPhase, 0~1)를 powerPeakPosition 기준 파워 [0,1]로 변환한다.
+    /// peakPosition에서 1이 되고, 양 끝(0 또는 1)까지 대칭으로 0에 떨어진다.
+    /// </summary>
+    private float ComputeSweetSpotPower(float swingPhase)
+    {
+        float dist = Mathf.Abs(swingPhase - powerPeakPosition);
+        if (dist <= powerPeakHalfWidth) return 1f;
+
+        float maxDist = swingPhase < powerPeakPosition ? powerPeakPosition : 1f - powerPeakPosition;
+        return 1f - Mathf.InverseLerp(powerPeakHalfWidth, maxDist, dist);
+    }
+
+    /// <summary>
+    /// 앞 드래그 궤적이 시작~끝을 잇는 직선 대비 얼마나 옆으로 부풀었는지로 곡률 [-1,1]을 구한다.
+    /// 완전한 대각선 직선 드래그(부풀음 없음)는 손떨림이 있어도 데드존 이하로 걸러져 스핀 0이 된다.
+    /// </summary>
     private float ComputeSpin()
     {
         if (_forwardPoints.Count < 3) return 0f;
 
-        float crossSum = 0f;
-        int count = 0;
-        for (int i = 1; i < _forwardPoints.Count - 1; i++)
-        {
-            Vector2 a = _forwardPoints[i]     - _forwardPoints[i - 1];
-            Vector2 b = _forwardPoints[i + 1] - _forwardPoints[i];
-            float denom = a.magnitude * b.magnitude;
-            if (denom < 0.0001f) continue;
+        Vector2 start = _forwardPoints[0];
+        Vector2 end = _forwardPoints[_forwardPoints.Count - 1];
+        Vector2 chord = end - start;
+        float chordLen = chord.magnitude;
+        if (chordLen < 0.0001f) return 0f;
 
-            // 2D 외적: 양수 = 반시계 회전, 음수 = 시계 회전
-            float cross = a.x * b.y - a.y * b.x;
-            crossSum += cross / denom;
-            count++;
+        Vector2 chordDir = chord / chordLen;
+
+        // 직선(코드)에서 가장 많이 벗어난 지점의 부호 있는 수직 거리를 찾는다.
+        // 양수 = 반시계(왼쪽으로 부풂), 음수 = 시계(오른쪽으로 부풂).
+        float maxSignedDeviation = 0f;
+        foreach (var p in _forwardPoints)
+        {
+            Vector2 offset = p - start;
+            float perp = chordDir.x * offset.y - chordDir.y * offset.x;
+            if (Mathf.Abs(perp) > Mathf.Abs(maxSignedDeviation))
+                maxSignedDeviation = perp;
         }
 
-        return count == 0 ? 0f : Mathf.Clamp(crossSum / count, -1f, 1f);
+        float curvatureRatio = maxSignedDeviation / chordLen;
+        if (Mathf.Abs(curvatureRatio) < straightnessDeadZone) return 0f;
+
+        // 실제 공의 훅 방향(BallLauncher/BallMagnusEffect)과 부호를 맞추기 위해 반전한다.
+        return Mathf.Clamp(-curvatureRatio * spinSensitivity, -1f, 1f);
     }
 
     // ── 시각화 ──────────────────────────────────────────────────────────────────
 
     private void OnGUI()
     {
-        if (IsMenuActive || State == ThrowState.Idle) return;
+        if (State == ThrowState.Idle) return;
 
         EnsureStyles();
 
-        Vector2 origin = ToGUI(CurrentMousePos);
         float power = ThrowPowerNormalized;
 
         Color arrowColor = State == ThrowState.Positioning
             ? Color.white
             : Color.Lerp(Color.green, Color.red, power);
-
-        // 화살표
-        float arrowLen = State == ThrowState.Positioning
-            ? maxArrowLengthPx * 0.25f
-            : maxArrowLengthPx * power;
-
-        var guiDir = new Vector2(0f, -1f).normalized;
-        Vector2 tip = origin + guiDir * arrowLen;
-
-        if (arrowLen > 1f)
-        {
-            DrawLine(origin, tip, arrowColor, 4f);
-            if (arrowLen > 20f)
-            {
-                Vector2 headL = (Vector2)(Quaternion.Euler(0f, 0f,  25f) * -(Vector3)(guiDir * 14f));
-                Vector2 headR = (Vector2)(Quaternion.Euler(0f, 0f, -25f) * -(Vector3)(guiDir * 14f));
-                DrawLine(tip, tip + headL, arrowColor, 3f);
-                DrawLine(tip, tip + headR, arrowColor, 3f);
-            }
-        }
 
         // ForwardDrag 궤적 표시
         if (State == ThrowState.ForwardDrag && _forwardPoints.Count >= 2)
@@ -253,12 +285,15 @@ public class ThrowInputHandler : MonoBehaviour
                 string spinText = Mathf.Abs(SpinNormalized) < 0.05f ? "없음"
                     : SpinNormalized > 0 ? $"← {SpinNormalized * 100f:F0}%"
                     : $"→ {-SpinNormalized * 100f:F0}%";
-                label = $"파워: {power * 100f:F0}%  |  스핀: {spinText}";
+                string shapeText = IsCurvedDrag ? "커브" : "직선(대각선)";
+                string angleText = IsCurvedDrag ? "-" : $"{Mathf.Abs(InitialDragAngleDeg):F0}° {(InitialDragAngleDeg >= 0f ? "왼쪽" : "오른쪽")}";
+                label = $"파워: {power * 100f:F0}%  |  스핀: {spinText}\n궤적 모양: {shapeText}  |  입력 각도: {angleText}";
                 labelColor = arrowColor;
                 break;
         }
         _labelStyle.normal.textColor = labelColor;
-        GUI.Label(new Rect(10, 10, 600, 28), label, _labelStyle);
+        const float labelWidth = 400f;
+        GUI.Label(new Rect(Screen.width - labelWidth - 10f, 10f, labelWidth, 52), label, _labelStyle);
     }
 
     private void EnsureStyles()
@@ -267,7 +302,8 @@ public class ThrowInputHandler : MonoBehaviour
         _labelStyle = new GUIStyle(GUI.skin.label)
         {
             fontStyle = FontStyle.Bold,
-            fontSize  = 16
+            fontSize  = 16,
+            alignment = TextAnchor.UpperRight
         };
     }
 

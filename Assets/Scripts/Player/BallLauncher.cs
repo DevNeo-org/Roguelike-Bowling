@@ -20,6 +20,10 @@ public class BallLauncher : MonoBehaviour
     [Tooltip("SpinNormalized(±1)에 곱해 angularVelocity(rad/s)로 변환. 값이 클수록 더 크게 휨.")]
     [SerializeField] private float spinScale = 10f;
 
+    [Header("Launch Direction")]
+    [Tooltip("앞 드래그 방향의 좌우 성분에 곱하는 배율(0~1). 1이면 드래그한 각도 그대로 발사, 낮을수록 더 완만한 각도로 발사.")]
+    [SerializeField, Range(0f, 1f)] private float dragAngleScale = 0.5f;
+
     [Header("Weight Effect")]
     [Tooltip("발사 속도 보정 기준 질량(기본 9파운드 공의 질량).")]
     [SerializeField] private float referenceMass = 7f;
@@ -27,10 +31,6 @@ public class BallLauncher : MonoBehaviour
     [SerializeField] private float weightSpeedInfluence = 0.1f;
     [Tooltip("무게 보정으로 속도가 변할 수 있는 최대/최소 배율 범위.")]
     [SerializeField] private Vector2 weightSpeedFactorRange = new Vector2(0.85f, 1.15f);
-
-    [Header("UI Block")]
-    [Tooltip("이 UI가 활성화되어 있으면 조작을 차단합니다 (예: MainMenuUI)")]
-    [SerializeField] private GameObject _mainMenuUI;
 
     private Rigidbody _ball;
     private BallResetter _ballResetter;
@@ -48,7 +48,6 @@ public class BallLauncher : MonoBehaviour
     private void Update()
     {
         if (!_canLaunch) return;
-        if (_mainMenuUI != null && _mainMenuUI.activeInHierarchy) return;
 
         if (_input.State == ThrowInputHandler.ThrowState.Positioning)
             MoveBallHorizontally();
@@ -94,7 +93,13 @@ public class BallLauncher : MonoBehaviour
             weightSpeedFactorRange.x, weightSpeedFactorRange.y);
         speed *= speedFactor;
 
-        Vector3 worldDir = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
+        Vector3 laneForward = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
+        Vector3 camRight = Vector3.ProjectOnPlane(_camera.transform.right, Vector3.up).normalized;
+
+        // 앞으로 드래그한 방향(화면 기준)을 카메라의 정면/오른쪽 축에 그대로 매핑해,
+        // 드래그한 각도 그대로 발사 방향이 되게 한다 (예: 우측 대각선 드래그 → 우측 대각선으로 발사).
+        Vector2 dragDir = _input.InitialDragDirection;
+        Vector3 worldDir = (laneForward * dragDir.y + camRight * dragDir.x * dragAngleScale).normalized;
 
         _ball.linearVelocity  = worldDir * speed;
         _ball.angularVelocity = Vector3.up * _input.SpinNormalized * spinScale;
