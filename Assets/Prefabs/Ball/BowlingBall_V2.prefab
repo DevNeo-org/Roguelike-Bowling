@@ -171,7 +171,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bab16ffb466b96941adf8326603b2c41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallMagnusEffect
-  magnusCoeff: 0.1
+  magnusCoeff: 0.5
+  referenceMass: 7
   invertSpin: 1
   showForwardArrow: 1
   arrowLength: 0.2

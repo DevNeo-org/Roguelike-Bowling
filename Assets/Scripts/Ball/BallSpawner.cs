@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 // 공의 생성·삭제를 전담한다. Ball_Spawner 오브젝트에 부착.
 // Play 시작 시 ballPrefab을 자신의 위치에 스폰하고,
@@ -28,6 +29,21 @@ public class BallSpawner : MonoBehaviour
     {
         if (!_subscribedToWeightSelector)
             TrySubscribeToWeightSelector();
+
+        var kb = Keyboard.current;
+        if (kb != null && kb.spaceKey.wasPressedThisFrame)
+            ForceRespawnNow();
+    }
+
+    /// <summary>디버그용: 대기 시간 없이 즉시 현재 공을 파괴하고 새 공을 스폰한다.</summary>
+    private void ForceRespawnNow()
+    {
+        if (_currentBall == null) return;
+
+        StopAllCoroutines();
+        Destroy(_currentBall);
+        inputHandler.Reset();
+        SpawnBall();
     }
 
     private void OnDestroy()
