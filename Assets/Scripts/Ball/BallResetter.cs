@@ -13,6 +13,7 @@ public class BallResetter : MonoBehaviour
     private BallSpawner _spawner;
     private Rigidbody _rb;
     private bool _triggered;
+    private bool _reported;
     private float _elapsed;
 
     // BallLauncher가 Launch() 호출 후 SetLaunched()로 명시적으로 활성화
@@ -79,7 +80,7 @@ public class BallResetter : MonoBehaviour
 
     private void Update()
     {
-        if (_triggered) return;
+        if (_reported) return;
 
         // 낙하 감지는 발사 전후 항상 활성
         if (transform.position.y < fallThreshold)
@@ -96,9 +97,24 @@ public class BallResetter : MonoBehaviour
             Trigger();
     }
 
+    // 낙하/타임아웃으로 인한 리스폰도 일반 거터/미스와 동일하게 PinDeckManager 판정을
+    // 거치도록 한다 - 그래야 이번 투구가 0핀으로 정상 집계되고, HandleThrowJudged를 통해
+    // 리스폰된다. 예전에는 여기서 바로 Respawn()을 불러서 구멍에 빠지거나 타임아웃이 나도
+    // 투구 자체가 기록되지 않고 그냥 새 공만 나오는 문제가 있었다.
+    // _reported(여기서만 사용)와 _triggered(HandleThrowJudged의 최종 리스폰 가드)를 분리해야
+    // 한다 - 같은 플래그를 쓰면 OnBallFinished가 비동기로 판정을 끝내고 이벤트를 쏘기도
+    // 전에 이미 true가 되어버려서 정작 리스폰 자체가 무시돼버린다.
     private void Trigger()
     {
-        _triggered = true;
-        _spawner.Respawn(gameObject);
+        if (_reported) return;
+        _reported = true;
+
+        if (PinDeckManager.Instance != null)
+            PinDeckManager.Instance.OnBallFinished(gameObject);
+        else
+        {
+            _triggered = true;
+            _spawner.Respawn(gameObject);
+        }
     }
 }
