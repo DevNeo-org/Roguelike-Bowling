@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee3e47527fa100b4ab6f2bb91cee8588, type: 3}
+  m_Name: TutorialStep_Positioning
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialStepData
+  lines:
+  - First, let's learn how to position your ball.
+  - Click and hold the left mouse button anywhere on the lane.
+  - While holding, drag left or right to move the ball.
+  - "Try it now \u2014 move the ball to the left and right!"
+  condition: 1
+  completionLines:
+  - Nice! You can now position your ball anywhere on the lane.
+  - Next, let's learn how to control your throw power.

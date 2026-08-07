@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee3e47527fa100b4ab6f2bb91cee8588, type: 3}
+  m_Name: TutorialStep_Intro
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialStepData
+  lines:
+  - Welcome to Roguelike Bowling!
+  - This is a bowling game controlled entirely with your mouse.
+  - Every run features different lanes, obstacles, and hazards.
+  - Use items and skills to aim for the highest score.
+  - Let's start by learning how to throw the ball!
+  condition: 0
+  completionLines: []
