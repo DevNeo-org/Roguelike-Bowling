@@ -39,7 +39,7 @@ public class ThrowInputHandler : MonoBehaviour
 
     [Header("Debug")]
     [Tooltip("테스트용: 파워를 항상 99%로 고정한다.")]
-    [SerializeField] private bool debugForcePower99 = true;
+    [SerializeField] private bool debugForcePower99 = false;
 
     // ── 공개 프로퍼티 ──────────────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ public class ThrowInputHandler : MonoBehaviour
     /// </summary>
     public float ThrowPowerNormalized { get; private set; }
 
-    /// <summary>스윙 진행도 [0,1]. Oscillating 중 PingPong, 재형태화 없는 원본 값. 게이지 fillAmount 표시용.</summary>
+    /// <summary>스윙 진행도 [0,1]. Oscillating 중 PingPong, 재형태화 없는 원본 값. 막대 게이지 화살표 위치 표시용.</summary>
     public float SwingPhaseNormalized { get; private set; }
 
     /// <summary>
@@ -80,6 +80,11 @@ public class ThrowInputHandler : MonoBehaviour
     /// <summary>Done 상태에서, 곡률이 감지되어 스핀이 걸렸으면 true(커브), 아니면 false(직선 대각선).</summary>
     public bool IsCurvedDrag => SpinNormalized != 0f;
 
+    /// <summary>파워 최대 구간 중앙 (0~1). PowerGaugeUI의 스윗스팟 표시에 사용.</summary>
+    public float PowerPeakPosition  => powerPeakPosition;
+    /// <summary>파워 최대 구간 반너비. PowerGaugeUI의 스윗스팟 표시에 사용.</summary>
+    public float PowerPeakHalfWidth => powerPeakHalfWidth;
+
     // ── 내부 상태 ──────────────────────────────────────────────────────────────
 
     private Vector2 _dragStartPos;
@@ -88,8 +93,10 @@ public class ThrowInputHandler : MonoBehaviour
 
     private readonly List<Vector2> _forwardPoints = new List<Vector2>();
 
+#if UNITY_EDITOR
     private GUIStyle _labelStyle;
     private static Texture2D _lineTex;
+#endif
 
     // ── 외부 호출 ──────────────────────────────────────────────────────────────
 
@@ -243,8 +250,9 @@ public class ThrowInputHandler : MonoBehaviour
         return Mathf.Clamp(-curvatureRatio * spinSensitivity, -1f, 1f);
     }
 
-    // ── 시각화 ──────────────────────────────────────────────────────────────────
+    // ── 시각화 (에디터 전용) ────────────────────────────────────────────────────
 
+#if UNITY_EDITOR
     private void OnGUI()
     {
         if (State == ThrowState.Idle) return;
@@ -329,4 +337,5 @@ public class ThrowInputHandler : MonoBehaviour
         GUI.matrix = savedMatrix;
         GUI.color = saved;
     }
+#endif
 }
