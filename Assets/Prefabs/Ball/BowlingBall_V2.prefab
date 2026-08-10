@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5353932680347612450}
   - component: {fileID: 5357005047908765449}
   - component: {fileID: 2056307085531689644}
+  - component: {fileID: 1063764262909429080}
   m_Layer: 0
   m_Name: BowlingBall_V2
   m_TagString: Untagged
@@ -177,6 +178,18 @@ MonoBehaviour:
   showForwardArrow: 1
   arrowLength: 0.2
   arrowColor: {r: 1, g: 0, b: 0, a: 1}
+--- !u!114 &1063764262909429080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5022733497930765888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0d6fdf8a07bb4043aea90f4dd141bf6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallItemEffects
 --- !u!1 &6366178080433528413
 GameObject:
   m_ObjectHideFlags: 0

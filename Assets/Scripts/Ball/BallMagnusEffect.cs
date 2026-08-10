@@ -67,7 +67,8 @@ public class BallMagnusEffect : MonoBehaviour
         // 공이 무거울수록 같은 스핀이라도 궤적을 덜 휘게(관성이 크므로) 만든다.
         // referenceMass(기본 9파운드)를 기준으로 정규화 - 기준 질량인 공은 기존과 동일하게 동작한다.
         float massRatio = referenceMass / Mathf.Max(_rb.mass, 0.01f);
-        Vector3 force = Vector3.Cross(Vector3.up * curveSpin, _rb.linearVelocity) * magnusCoeff * massRatio;
+        Vector3 force = Vector3.Cross(Vector3.up * curveSpin, _rb.linearVelocity) * magnusCoeff * massRatio
+            * ItemEffectManager.CurveStrengthMultiplier; // 낡은 수건/왁스 코팅 타월
 
         if (invertSpin)
             force = -force;

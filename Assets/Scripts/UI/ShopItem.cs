@@ -27,6 +27,27 @@ public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     private void OnEnable()
     {
         RefreshDisplay();
+
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.OnItemAdded += HandleInventoryChanged;
+            InventoryManager.Instance.OnItemRemoved += HandleInventoryChanged;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.OnItemAdded -= HandleInventoryChanged;
+            InventoryManager.Instance.OnItemRemoved -= HandleInventoryChanged;
+        }
+    }
+
+    // 다른 카드의 구매/소모로 상충 관계가 바뀔 수 있으므로, 어떤 아이템이 바뀌든 항상 갱신한다.
+    private void HandleInventoryChanged(string changedItemId)
+    {
+        RefreshDisplay();
     }
 
     public void Configure(string newName, string newDescription, int newPrice, Sprite newIcon)
@@ -74,18 +95,24 @@ public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         return InventoryManager.Instance != null && InventoryManager.Instance.IsOwned(itemName);
     }
 
+    private string ConflictingOwnedItem()
+    {
+        return InventoryManager.Instance != null ? InventoryManager.Instance.GetConflictingOwnedItem(itemName) : null;
+    }
+
     private void RefreshDisplay()
     {
         if (nameText != null)
             nameText.text = itemName;
 
         bool owned = IsOwned();
+        string conflict = owned ? null : ConflictingOwnedItem();
 
         if (priceText != null)
-            priceText.text = owned ? "보유중" : $"{price} G";
+            priceText.text = owned ? "보유중" : conflict != null ? $"{conflict} 보유 중" : $"{price} G";
 
         if (buyButton != null)
-            buyButton.interactable = !owned;
+            buyButton.interactable = !owned && conflict == null;
     }
 
     public void OnBuyButtonClicked()
@@ -93,6 +120,13 @@ public class ShopItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         if (IsOwned())
         {
             Debug.Log($"[구매 실패] {itemName}은(는) 이미 보유하고 있어 중복 구매할 수 없습니다.");
+            return;
+        }
+
+        string conflict = ConflictingOwnedItem();
+        if (conflict != null)
+        {
+            Debug.Log($"[구매 실패] {itemName}은(는) {conflict}와(과) 함께 보유할 수 없습니다.");
             return;
         }
 

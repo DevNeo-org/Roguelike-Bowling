@@ -79,7 +79,9 @@ public class BallSpawner : MonoBehaviour
 
         var rb = ball.GetComponent<Rigidbody>();
         if (rb != null)
-            rb.mass = BallWeightSelector.Instance.GetMassForSelected();
+            // 무게 변경은 SetBall() 이후에도 다시 일어날 수 있어(예: 무게 버튼 재선택),
+            // 상점 아이템 배율(ItemEffectManager)을 여기서도 함께 곱해줘야 SetBall()이 곱한 값이 지워지지 않는다.
+            rb.mass = BallWeightSelector.Instance.GetMassForSelected() * ItemEffectManager.BallMassMultiplier;
 
         var bodyRenderer = ball.GetComponent<MeshRenderer>();
         if (bodyRenderer != null)
