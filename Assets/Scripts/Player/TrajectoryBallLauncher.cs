@@ -55,6 +55,7 @@ public class TrajectoryBallLauncher : MonoBehaviour
     private Vector3 _spawnPosition;
     private Camera _camera;
     private TrajectoryThrowInputHandler _input;
+    private Animator _animator;
     private bool _canLaunch = true;
 
     private bool _isLaunched;
@@ -69,6 +70,7 @@ public class TrajectoryBallLauncher : MonoBehaviour
     {
         _input = GetComponent<TrajectoryThrowInputHandler>();
         _camera = Camera.main;
+        _animator = GetComponent<Animator>();
     }
 
     private void Update()
@@ -133,6 +135,7 @@ public class TrajectoryBallLauncher : MonoBehaviour
         _ball.isKinematic = false;
         _ball.linearVelocity = Vector3.zero;
         _ball.angularVelocity = Vector3.zero;
+        _animator?.SetTrigger("Throw");
 
         _laneForward = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
         _laneRight = Vector3.ProjectOnPlane(_camera.transform.right, Vector3.up).normalized;
