@@ -167,7 +167,7 @@ GameObject:
   - component: {fileID: 2056307085531689644}
   m_Layer: 0
   m_Name: BowlingBall_V3
-  m_TagString: Untagged
+  m_TagString: Ball
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -446,8 +446,6 @@ MonoBehaviour:
   barBackground: {fileID: 6720870931197501553}
   arrowIndicator: {fileID: 9015946379746709131}
   sweetSpotZone: {fileID: 2754337473333641797}
-  sweetSpotCenter: 0.5
-  sweetSpotHalfWidth: 0.1
 --- !u!1 &5337848683709084329
 GameObject:
   m_ObjectHideFlags: 0

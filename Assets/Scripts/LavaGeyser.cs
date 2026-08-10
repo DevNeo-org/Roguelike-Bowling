@@ -1,12 +1,14 @@
 using UnityEngine;
 
 // Obstacle: 간헐천 분출 (lava geyser).
-// The reverse of the icicle drop - erupts UPWARD from the ground on a
-// random rhythm at a random spot in the lane, launching the ball into
-// the air if it's caught in the burst.
+// The reverse of the icicle drop - stays completely hidden BELOW the
+// ground between eruptions (not just sitting at ground level), then
+// erupts UPWARD through the floor on a random rhythm at a random spot in
+// the lane, launching the ball into the air if it's caught in the burst,
+// before sinking back out of sight.
 public class LavaGeyser : MonoBehaviour
 {
-    public float groundY = 0.1f;
+    public float hiddenY = -0.8f;
     public float eruptedY = 1.2f;
     public float eruptSpeed = 10f;
     public float minWaitTime = 1f;
@@ -24,6 +26,7 @@ public class LavaGeyser : MonoBehaviour
     private float timer;
     private float currentWaitTime;
     private Rigidbody rb;
+    private Renderer[] renderers;
 
     private void Awake()
     {
@@ -32,16 +35,28 @@ public class LavaGeyser : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
 
+        renderers = GetComponentsInChildren<Renderer>(true);
+
         RelocateToRandomSpot();
         currentWaitTime = Random.Range(minWaitTime, maxWaitTime);
+        SetVisible(false);
     }
 
     private void RelocateToRandomSpot()
     {
         float x = laneCenterX + Random.Range(-xRange, xRange);
         float z = Random.Range(zMin, zMax);
-        rb.position = new Vector3(x, groundY, z);
-        transform.position = new Vector3(x, groundY, z);
+        rb.position = new Vector3(x, hiddenY, z);
+        transform.position = new Vector3(x, hiddenY, z);
+    }
+
+    private void SetVisible(bool visible)
+    {
+        if (renderers == null) return;
+        foreach (var r in renderers)
+        {
+            if (r != null) r.enabled = visible;
+        }
     }
 
     private void FixedUpdate()
@@ -52,7 +67,7 @@ public class LavaGeyser : MonoBehaviour
         switch (state)
         {
             case State.Hidden:
-                if (timer >= currentWaitTime) { timer = 0f; state = State.Erupting; }
+                if (timer >= currentWaitTime) { timer = 0f; state = State.Erupting; SetVisible(true); }
                 break;
 
             case State.Erupting:
@@ -64,14 +79,19 @@ public class LavaGeyser : MonoBehaviour
                 }
 
             case State.Retracting:
-                if (timer >= retractTime)
                 {
-                    RelocateToRandomSpot();
-                    currentWaitTime = Random.Range(minWaitTime, maxWaitTime);
-                    timer = 0f;
-                    state = State.Hidden;
+                    float newY = Mathf.MoveTowards(pos.y, hiddenY, eruptSpeed * Time.fixedDeltaTime);
+                    rb.MovePosition(new Vector3(pos.x, newY, pos.z));
+                    if (timer >= retractTime || Mathf.Approximately(newY, hiddenY))
+                    {
+                        SetVisible(false);
+                        RelocateToRandomSpot();
+                        currentWaitTime = Random.Range(minWaitTime, maxWaitTime);
+                        timer = 0f;
+                        state = State.Hidden;
+                    }
+                    break;
                 }
-                break;
         }
     }
 

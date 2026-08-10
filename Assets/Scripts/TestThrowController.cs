@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 // Play mode test controller. Multiple separate stages exist side by side in
 // the scene (Mountain at x=-3, Field at x=100, Desert at x=200, Ice at
@@ -10,7 +11,8 @@ using UnityEngine.InputSystem;
 // R: remove any leftover test balls
 // E: spawn a banana peel + rock at random spots on the current lane
 // 1~5: jump to lane 1~5 within the current stage
-// Tab: cycle between stages
+// Tab: cycle between stages (combined Map scene) OR load the next scene
+//      (single-stage "_test" scenes, when singleStageMode is on)
 public class TestThrowController : MonoBehaviour
 {
     [Header("Launch Settings")]
@@ -46,6 +48,14 @@ public class TestThrowController : MonoBehaviour
     public float obstacleZOffsetMax = 14f;
     public float obstacleXRange = 0.35f;
 
+    [Header("Single-Stage Test Scenes")]
+    [Tooltip("켜면 이 씬엔 스테이지가 하나뿐이라고 보고, Tab을 눌렀을 때 스테이지 X 전환 대신 다음 씬을 로드한다.")]
+    public bool singleStageMode = false;
+    [Tooltip("이 씬 자신의 스테이지 X 위치 (singleStageMode일 때 사용).")]
+    public float singleStageX = -3f;
+    [Tooltip("singleStageMode에서 Tab을 눌렀을 때 순서대로 로드할 씬 이름들.")]
+    public string[] sceneCycle = { "Mountain_test", "Field_test", "Desert_test", "Ice_test", "Volcano_test" };
+
     // 스테이지들의 X 좌표, 5개 레인의 중심 Z(모든 스테이지가 같은 Z 패턴을 공유).
     private static readonly float[] stageX = { -3f, 100f, 200f, 300f, 400f };
     private static readonly string[] stageNames = { "산(Mountain)", "들판(Field)", "사막(Desert)", "얼음(Ice)", "화산(Volcano)" };
@@ -53,7 +63,8 @@ public class TestThrowController : MonoBehaviour
 
     private int currentStage = 0;
     private int selectedLaneIndex = 0;
-    private float LaneX => stageX[currentStage];
+    private float LaneX => singleStageMode ? singleStageX : stageX[currentStage];
+    private string CurrentStageName => singleStageMode ? SceneManager.GetActiveScene().name : stageNames[currentStage];
 
     private readonly List<GameObject> spawned = new List<GameObject>();
     private readonly List<GameObject> spawnedObstacles = new List<GameObject>();
@@ -79,7 +90,11 @@ public class TestThrowController : MonoBehaviour
         if (kb.spaceKey.wasPressedThisFrame && !waitingForThrow) Launch();
         if (kb.rKey.wasPressedThisFrame) ClearBalls();
         if (kb.eKey.wasPressedThisFrame) SpawnRandomObstacles();
-        if (kb.tabKey.wasPressedThisFrame) SwitchStage();
+        if (kb.tabKey.wasPressedThisFrame)
+        {
+            if (singleStageMode) LoadNextScene();
+            else SwitchStage();
+        }
 
         if (kb.digit1Key.wasPressedThisFrame) SelectLane(0);
         if (kb.digit2Key.wasPressedThisFrame) SelectLane(1);
@@ -103,10 +118,20 @@ public class TestThrowController : MonoBehaviour
         SelectLane(selectedLaneIndex);
     }
 
+    private void LoadNextScene()
+    {
+        string current = SceneManager.GetActiveScene().name;
+        int idx = System.Array.IndexOf(sceneCycle, current);
+        int nextIdx = (idx + 1) % sceneCycle.Length; // idx=-1 (not found) wraps to 0 too
+        string next = sceneCycle[nextIdx];
+        Debug.Log("[TestThrowController] 다음 씬으로 이동: " + next);
+        SceneManager.LoadScene(next);
+    }
+
     private void SelectLane(int index)
     {
         selectedLaneIndex = index;
-        Debug.Log("[TestThrowController] " + stageNames[currentStage] + " " + (index + 1) + "레인 선택");
+        Debug.Log("[TestThrowController] " + CurrentStageName + " " + (index + 1) + "레인 선택");
 
         float spawnZ = LaneSpawnZ(index);
         float camRestZ = spawnZ - 2f;
@@ -207,7 +232,7 @@ public class TestThrowController : MonoBehaviour
 
         spawned.Add(go);
 
-        Debug.Log("[TestThrowController] 투구(" + stageNames[currentStage] + " " + (selectedLaneIndex + 1) + "레인): sideways=" + sideways.ToString("F2") + " forwardSpeed=" + forwardSpeed.ToString("F2"));
+        Debug.Log("[TestThrowController] 투구(" + CurrentStageName + " " + (selectedLaneIndex + 1) + "레인): sideways=" + sideways.ToString("F2") + " forwardSpeed=" + forwardSpeed.ToString("F2"));
     }
 
     void ClearBalls()
@@ -278,14 +303,15 @@ public class TestThrowController : MonoBehaviour
     void OnGUI()
     {
         string spaceLine = waitingForThrow ? "Space : (이전 투구 판정 대기 중...)" : "Space : 공 투구 (현재 레인, 랜덤 방향)";
-        string laneLine = "현재: " + stageNames[currentStage] + " " + (selectedLaneIndex + 1) + "레인";
+        string laneLine = "현재: " + CurrentStageName + " " + (selectedLaneIndex + 1) + "레인";
+        string tabLine = singleStageMode ? "Tab : 다음 씬으로 이동" : "Tab : 스테이지 전환 (산/들판/사막/얼음/화산)";
 
         GUI.Label(new Rect(10, 10, 500, 140),
             spaceLine + "\n" +
             "R : 남은 테스트 공 제거\n" +
             "E : 현재 레인에 장애물 랜덤 스폰\n" +
             "1~5 : 레인 이동\n" +
-            "Tab : 스테이지 전환 (산/들판/사막/얼음/화산)\n" +
+            tabLine + "\n" +
             laneLine);
     }
 }

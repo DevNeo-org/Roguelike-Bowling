@@ -32,6 +32,11 @@ public class CrossingBallSpawner : MonoBehaviour
     public bool jaggedRockLook = false;
     public Material jaggedChunkMaterial;
 
+    [Tooltip("켜면 스폰될 때 바닥 밑에서 안 보이다가 솟아오른 뒤에 구르기 시작한다.")]
+    public bool riseInEffect = false;
+    public float riseDepth = 0.6f;
+    public float riseDuration = 0.35f;
+
     private float timer;
     private float nextInterval;
     private readonly List<Collider> spawnedColliders = new List<Collider>();
@@ -90,8 +95,10 @@ public class CrossingBallSpawner : MonoBehaviour
         Rigidbody rb = go.AddComponent<Rigidbody>();
         rb.mass = ballMass;
         rb.useGravity = true;
-        rb.linearVelocity = new Vector3(dir * rollSpeed, 0f, 0f);
-        rb.angularVelocity = new Vector3(0f, 0f, -dir * (rollSpeed / radius));
+        Vector3 rollVelocity = new Vector3(dir * rollSpeed, 0f, 0f);
+        Vector3 rollAngularVelocity = new Vector3(0f, 0f, -dir * (rollSpeed / radius));
+        rb.linearVelocity = rollVelocity;
+        rb.angularVelocity = rollAngularVelocity;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
         Collider[] toIgnore = FindEnvironmentCollidersToIgnore();
@@ -110,6 +117,36 @@ public class CrossingBallSpawner : MonoBehaviour
         float crossingDistance = laneWidth * 2f;
         float lifetime = (crossingDistance / rollSpeed) + 0.4f;
         Destroy(go, lifetime);
+
+        if (riseInEffect)
+        {
+            StartCoroutine(RiseInThenRoll(go, rb, rollVelocity, rollAngularVelocity));
+        }
+    }
+
+    private System.Collections.IEnumerator RiseInThenRoll(GameObject go, Rigidbody rb, Vector3 rollVelocity, Vector3 rollAngularVelocity)
+    {
+        rb.isKinematic = true;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        Vector3 targetPos = go.transform.position;
+        Vector3 hiddenPos = targetPos - new Vector3(0f, riseDepth, 0f);
+        go.transform.position = hiddenPos;
+
+        float t = 0f;
+        while (t < riseDuration)
+        {
+            if (go == null) yield break;
+            t += Time.deltaTime;
+            float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / riseDuration), 3f);
+            go.transform.position = Vector3.Lerp(hiddenPos, targetPos, eased);
+            yield return null;
+        }
+        if (go == null) yield break;
+        go.transform.position = targetPos;
+        rb.isKinematic = false;
+        rb.linearVelocity = rollVelocity;
+        rb.angularVelocity = rollAngularVelocity;
     }
 
     private void AddJaggedChunks(GameObject rockRoot)
@@ -131,12 +168,6 @@ public class CrossingBallSpawner : MonoBehaviour
 
     private Collider[] FindEnvironmentCollidersToIgnore()
     {
-        // Ignore EVERYTHING in the scene except lane floors - decor props
-        // (bench, plant pots, neon signs, ball return rail, etc.) aren't in
-        // any explicit list, so a name-based blacklist kept missing things
-        // and the crossing ball would ricochet off whatever wasn't listed.
-        // Instead: only keep collision with "Floor"-named objects; ignore
-        // every other collider (pins, gutters, walls, decor, everything).
         List<Collider> result = new List<Collider>();
 
         Collider[] allColliders = FindObjectsOfType<Collider>(true);
