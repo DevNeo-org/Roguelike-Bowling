@@ -116,6 +116,13 @@ public class ThrowInputHandler : MonoBehaviour
 
     private void Update()
     {
+        // 정비/실패 화면 등 "진행 중이던 스테이지가 일시정지"된 상태에서만 입력을 막는다.
+        // StageManager가 없거나(메인 메뉴 등), 아직 StartStage()가 한 번도 호출되지 않은 씬
+        // (개별 씬을 단독으로 열어 테스트하는 경우 등)은 막지 않는다 - IsPlaying만 보면 이 두
+        // 경우를 구분할 수 없어 원래 동작(자유롭게 투구 가능)이 깨졌었다.
+        if (StageManager.Instance != null && StageManager.Instance.IsPausedForNonPlayScreen)
+            return;
+
         var mouse = Mouse.current;
         if (mouse == null) return;
 
@@ -156,7 +163,8 @@ public class ThrowInputHandler : MonoBehaviour
                     _lowestY = pos.y;
 
                 _oscillationTimer += Time.deltaTime;
-                SwingPhaseNormalized = Mathf.PingPong(_oscillationTimer * oscillationSpeed * 2f, 1f);
+                float effectiveOscillationSpeed = oscillationSpeed * ItemEffectManager.PowerOscillationSpeedMultiplier; // 밸런스화
+                SwingPhaseNormalized = Mathf.PingPong(_oscillationTimer * effectiveOscillationSpeed * 2f, 1f);
                 ThrowPowerNormalized = debugForcePower99 ? 0.99f : ComputeSweetSpotPower(SwingPhaseNormalized);
 
                 // 앞으로 밀기 시작 → ForwardDrag
@@ -213,8 +221,7 @@ public class ThrowInputHandler : MonoBehaviour
         if (dist <= powerPeakHalfWidth) return 1f;
 
         float maxDist = swingPhase < powerPeakPosition ? powerPeakPosition : 1f - powerPeakPosition;
-        float power = 1f - Mathf.InverseLerp(powerPeakHalfWidth, maxDist, dist);
-        return Mathf.Max(power, ItemEffectManager.MinPowerFloor); // 미끄럼 방지 장갑: 파워 하한 보정
+        return 1f - Mathf.InverseLerp(powerPeakHalfWidth, maxDist, dist);
     }
 
     /// <summary>
@@ -246,7 +253,7 @@ public class ThrowInputHandler : MonoBehaviour
         }
 
         float curvatureRatio = maxSignedDeviation / chordLen;
-        if (Mathf.Abs(curvatureRatio) < straightnessDeadZone * ItemEffectManager.StraightnessDeadZoneMultiplier) return 0f; // 밸런스화: 손떨림 보정
+        if (Mathf.Abs(curvatureRatio) < straightnessDeadZone) return 0f;
 
         // 실제 공의 훅 방향(BallLauncher/BallMagnusEffect)과 부호를 맞추기 위해 반전한다.
         return Mathf.Clamp(-curvatureRatio * spinSensitivity, -1f, 1f);

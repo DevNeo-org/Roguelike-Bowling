@@ -19,15 +19,28 @@ public class BallItemEffects : MonoBehaviour
 
     private Collider _ballCollider;
 
+    // 장애물 파괴 볼은 공이 날아가는 동안 계속(충돌 시점에) 확인해야 하는데, 그 시점엔 이미
+    // ItemActivationManager의 "다음 투구" 켜짐 상태가 (Launch() 직후) 꺼져있을 수 있다 -
+    // 그래서 ArmForThrow() 시점에 이번 공 전용으로 스냅샷을 떠서 그 공이 사라질 때까지 들고 있는다.
+    private bool _obstacleBreakerArmedThisBall;
+
     private void Awake()
     {
         _ballCollider = GetComponent<Collider>();
     }
 
-    private void Start()
+    /// <summary>BallLauncher.Launch()가 발사 직전에 호출 - "이번 투구에 켜진" 액티브 아이템을
+    /// 이 공 하나에 확정(스냅샷)한다. 장애물 통과 볼은 여기서 바로 적용+소모하고,
+    /// 장애물 파괴 볼은 실제 충돌 시점까지 켜짐 여부만 기억해둔다.</summary>
+    public void ArmForThrow()
     {
         if (ItemEffectManager.HasObstaclePass)
+        {
             IgnoreAllObstacleCollisions();
+            ItemEffectManager.ConsumeObstaclePass();
+        }
+
+        _obstacleBreakerArmedThisBall = ItemEffectManager.HasObstacleBreaker;
     }
 
     // 장애물 통과 볼: 스폰 시점에 씬의 모든 장애물 콜라이더와 물리 충돌 자체를 무시시켜,
@@ -53,13 +66,14 @@ public class BallItemEffects : MonoBehaviour
 
     private void TryBreakObstacle(GameObject hit)
     {
-        if (!ItemEffectManager.HasObstacleBreaker || !IsObstacle(hit))
+        if (!_obstacleBreakerArmedThisBall || !IsObstacle(hit))
             return;
 
-        if (ItemEffectManager.TryConsumeObstacleBreaker())
+        if (ItemEffectManager.ConsumeObstacleBreaker())
         {
             Debug.Log($"[장애물 파괴 볼] {hit.name} 파괴됨 (아이템 소모)");
             hit.SetActive(false);
+            _obstacleBreakerArmedThisBall = false; // 이 공에서 다시 못 쓰게(1회용)
         }
     }
 

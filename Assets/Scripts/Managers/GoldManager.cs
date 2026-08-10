@@ -5,7 +5,7 @@ public class GoldManager : MonoBehaviour
 {
     public static GoldManager Instance { get; private set; }
 
-    [SerializeField] private int startingGold = 500;
+    [SerializeField] private int startingGold = 0;
 
     public int CurrentGold { get; private set; }
     public event Action<int> OnGoldChanged;

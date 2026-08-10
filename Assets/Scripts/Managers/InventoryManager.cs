@@ -9,7 +9,6 @@ public class InventoryManager : MonoBehaviour
     // 동시에 보유할 수 없는 아이템 쌍(정반대 효과라 함께 사면 서로 상쇄되는 것들).
     private static readonly (string a, string b)[] ExclusivePairs =
     {
-        (ItemIds.HeavyBall, ItemIds.LightCoatedBall),
         (ItemIds.OldTowel, ItemIds.WaxTowel),
     };
 

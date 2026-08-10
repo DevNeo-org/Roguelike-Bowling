@@ -14,6 +14,12 @@ public class StageManager : MonoBehaviour
     [SerializeField] private int targetScoreIncreasePerStage = 10;
     private const int FramesPerStage = 10;
 
+    [Header("Clear Reward")]
+    [Tooltip("10프레임을 전부 써서 클리어했을 때(남은 프레임 0) 지급하는 기본 골드.")]
+    [SerializeField] private int clearGoldBase = 100;
+    [Tooltip("클리어 시점에 남아있던 프레임 1개당 추가로 지급하는 골드.")]
+    [SerializeField] private int clearGoldPerRemainingFrame = 25;
+
     [Header("Stage Play UI")]
     [SerializeField] private GameObject stagePlayUI;
     [SerializeField] private TextMeshProUGUI infoText;
@@ -48,9 +54,16 @@ public class StageManager : MonoBehaviour
     private int stageScore;
     private int targetScore;
     private bool isPlaying;
+    // StartStage()가 한 번이라도 호출됐는지 - "정비/실패로 일시정지"와 "애초에 스테이지가
+    // 시작된 적 없음"(예: 씬을 단독으로 열어 테스트하거나, 맵 이동 직후 아직 StartStage가
+    // 호출되지 않은 경우)을 구분하기 위해 필요하다.
+    private bool stageEverStarted;
 
     public int CurrentFrameNumber => currentFrame;
     public bool IsPlaying => isPlaying;
+    /// <summary>정비/실패 화면 등으로 "진행 중이던 스테이지가 일시정지"된 상태인지. 아직 한 번도
+    /// StartStage()가 호출되지 않은 씬(단독 테스트 등)에서는 false - 그런 경우엔 투구를 막지 않는다.</summary>
+    public bool IsPausedForNonPlayScreen => stageEverStarted && !isPlaying;
 
     // 프레임별로 던진 공의 핀 개수를 순서대로 기록 (10프레임만 보너스 투구로 최대 3개까지 가능).
     private List<int>[] frameThrows;
@@ -124,6 +137,7 @@ public class StageManager : MonoBehaviour
         stageScore = 0;
         targetScore = baseTargetScore + (stage - 1) * targetScoreIncreasePerStage;
         isPlaying = true;
+        stageEverStarted = true;
 
         pinsStanding = 10;
         frameThrows = new List<int>[FramesPerStage];
@@ -471,7 +485,13 @@ public class StageManager : MonoBehaviour
 
     private void EnterMaintenance()
     {
-        Debug.Log($"[스테이지] {currentStage}스테이지 클리어! (점수 {stageScore} / 목표 {targetScore})");
+        // 클리어 시점(currentFrame)까지 쓴 프레임이 적을수록(=빠르게 깰수록) 보상이 커진다.
+        // 10프레임을 다 써서 클리어하면 남은 프레임 0 -> 기본 보상만 지급.
+        int framesRemaining = Mathf.Max(0, FramesPerStage - currentFrame);
+        int goldReward = clearGoldBase + clearGoldPerRemainingFrame * framesRemaining;
+        GoldManager.Instance?.AddGold(goldReward);
+
+        Debug.Log($"[스테이지] {currentStage}스테이지 클리어! (점수 {stageScore} / 목표 {targetScore}, 남은 프레임 {framesRemaining} -> +{goldReward} G)");
 
         if (stagePlayUI != null)
             stagePlayUI.SetActive(false);
@@ -479,7 +499,7 @@ public class StageManager : MonoBehaviour
         // 상점 UI가 이제 정비 화면 우측 패널에 항상 표시되므로 별도 토글 버튼은 더 이상 사용하지 않는다.
 
         if (maintenanceSummaryText != null)
-            maintenanceSummaryText.text = $"스테이지 {currentStage} 클리어!\n점수 {stageScore} / 목표 {targetScore}";
+            maintenanceSummaryText.text = $"스테이지 {currentStage} 클리어!\n점수 {stageScore} / 목표 {targetScore}\n+{goldReward} G (남은 프레임 {framesRemaining})";
 
         if (maintenanceUI != null)
             maintenanceUI.SetActive(true);

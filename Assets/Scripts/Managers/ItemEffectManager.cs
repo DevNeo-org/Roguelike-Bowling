@@ -1,60 +1,42 @@
 // 보유 상점 아이템(InventoryManager)을 실제 수치 배율/플래그로 변환한다.
 // 투구·장애물 스크립트는 이 클래스가 계산한 값만 한두 줄로 읽어가고,
 // 아이템별 판단 로직 자체는 전부 여기 모아둔다.
+//
+// 아이템은 두 종류다:
+//  - 패시브 아이템(밸런스화): 보유만 하고 있으면 항상 적용 - Owned() 기준.
+//  - 액티브 아이템(장애물 통과/파괴 볼, 스트레이트 슈즈, 낡은 수건, 왁스 코팅 타월): 우측 사용
+//    버튼(ActiveItemSelector)으로 "다음 투구에 켜기"를 직접 눌러야 적용 - ItemActivationManager
+//    기준. 보유만으로는 효과가 켜지지 않는다.
 public static class ItemEffectManager
 {
     private static bool Owned(string itemId)
         => InventoryManager.Instance != null && InventoryManager.Instance.IsOwned(itemId);
 
-    /// <summary>가동 범위 확장 벨트: 좌우 포지셔닝 가능 범위 배율.</summary>
-    public static float ArmRadiusMultiplier => Owned(ItemIds.ArmRangeBelt) ? 1.4f : 1f;
+    /// <summary>밸런스화(패시브): 파워 게이지 진동 속도 배율(1보다 작을수록 느려져 타이밍 맞추기 쉬움).</summary>
+    public static float PowerOscillationSpeedMultiplier => Owned(ItemIds.BalanceShoes) ? 0.7f : 1f;
 
-    /// <summary>밸런스화: 손떨림으로 인식되는 곡률 데드존을 넓혀 오조작을 보정.</summary>
-    public static float StraightnessDeadZoneMultiplier => Owned(ItemIds.BalanceShoes) ? 2f : 1f;
+    /// <summary>스트레이트 슈즈(액티브): 이번 투구에 켜져 있으면 드래그 곡률을 무시하고 직선으로 발사.</summary>
+    public static bool ForceStraightTrajectory => ItemActivationManager.IsActive(ItemIds.StraightShoes);
 
-    /// <summary>스트레이트 슈즈: 드래그 곡률을 무시하고 항상 직선으로 발사.</summary>
-    public static bool ForceStraightTrajectory => Owned(ItemIds.StraightShoes);
+    // 낡은 수건/왁스 코팅 타월: 아이템 ID·상점 등록·사용 버튼(활성화 토글)까지는 있지만,
+    // 실제 효과는 아직 구현하지 않는다(사용자 요청) - 나중에 곡률이 "더 일찍/늦게 반영되는"
+    // 타이밍 효과로 구현할 예정.
 
-    /// <summary>미끄럼 방지 장갑: 스윙 파워가 아무리 낮아도 보장되는 최소치.</summary>
-    public static float MinPowerFloor => Owned(ItemIds.AntiSlipGlove) ? 0.3f : 0f;
+    /// <summary>장애물 통과 볼(액티브): 이번 투구에 켜져 있으면 장애물과의 물리 충돌 자체를 무시.</summary>
+    public static bool HasObstaclePass => ItemActivationManager.IsActive(ItemIds.ObstaclePassBall);
 
-    /// <summary>무거운 공/경량코팅볼: 공 질량 배율. 무거우면 파괴력↑·속도↓, 가벼우면 반대.</summary>
-    public static float BallMassMultiplier
-    {
-        get
-        {
-            float mult = 1f;
-            if (Owned(ItemIds.HeavyBall)) mult *= 1.3f;
-            if (Owned(ItemIds.LightCoatedBall)) mult *= 0.75f;
-            return mult;
-        }
-    }
+    /// <summary>장애물 파괴 볼(액티브): 이번 투구에 켜져 있으면 장애물과 부딪힐 때 파괴.</summary>
+    public static bool HasObstacleBreaker => ItemActivationManager.IsActive(ItemIds.ObstacleBreakerBall);
 
-    /// <summary>스핀 아대: 발사 시 적용되는 스핀(angularVelocity) 배율.</summary>
-    public static float SpinScaleMultiplier => Owned(ItemIds.SpinBand) ? 1.5f : 1f;
+    /// <summary>
+    /// 장애물 통과 볼을 1회 소모한다(보유 목록에서 제거). BallItemEffects가 이미 자체적으로
+    /// "이번 공에 켜져 있었는지" 스냅샷을 들고 있을 때만 호출하므로 여기서는 별도 확인 없이
+    /// 바로 시도한다.
+    /// </summary>
+    public static bool ConsumeObstaclePass()
+        => InventoryManager.Instance != null && InventoryManager.Instance.RemoveItem(ItemIds.ObstaclePassBall);
 
-    /// <summary>낡은 수건/왁스 코팅 타월: 매그너스 커브 힘 배율. 낡은 수건=더 세게, 왁스=더 약하게.</summary>
-    public static float CurveStrengthMultiplier
-    {
-        get
-        {
-            float mult = 1f;
-            if (Owned(ItemIds.OldTowel)) mult *= 1.4f;
-            if (Owned(ItemIds.WaxTowel)) mult *= 0.6f;
-            return mult;
-        }
-    }
-
-    /// <summary>장애물 통과 볼: 장애물과의 물리 충돌 자체를 무시.</summary>
-    public static bool HasObstaclePass => Owned(ItemIds.ObstaclePassBall);
-
-    /// <summary>장애물 파괴 볼 보유 여부(소모 전 확인용).</summary>
-    public static bool HasObstacleBreaker => Owned(ItemIds.ObstacleBreakerBall);
-
-    /// <summary>장애물 파괴 볼을 1회 소모한다. 보유 중이 아니면 아무 일도 하지 않고 false 반환.</summary>
-    public static bool TryConsumeObstacleBreaker()
-    {
-        if (!HasObstacleBreaker || InventoryManager.Instance == null) return false;
-        return InventoryManager.Instance.RemoveItem(ItemIds.ObstacleBreakerBall);
-    }
+    /// <summary>장애물 파괴 볼을 1회 소모한다(보유 목록에서 제거). 위와 동일한 이유로 별도 확인 없음.</summary>
+    public static bool ConsumeObstacleBreaker()
+        => InventoryManager.Instance != null && InventoryManager.Instance.RemoveItem(ItemIds.ObstacleBreakerBall);
 }

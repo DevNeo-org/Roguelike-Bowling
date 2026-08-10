@@ -34,6 +34,7 @@ public class BallLauncher : MonoBehaviour
 
     private Rigidbody _ball;
     private BallResetter _ballResetter;
+    private BallItemEffects _ballItemEffects;
     private Vector3 _spawnPosition;
     private Camera _camera;
     private ThrowInputHandler _input;
@@ -71,9 +72,8 @@ public class BallLauncher : MonoBehaviour
         Vector3 hit = ray.GetPoint(dist);
 
         // 좌우 성분만 추출하여 스폰 위치 기준으로 클램프
-        float radius = armRadius * ItemEffectManager.ArmRadiusMultiplier; // 가동 범위 확장 벨트
         float lateral = Vector3.Dot(hit - _spawnPosition, camRight);
-        lateral = Mathf.Clamp(lateral, -radius, radius);
+        lateral = Mathf.Clamp(lateral, -armRadius, armRadius);
 
         _ball.MovePosition(_spawnPosition + camRight * lateral);
     }
@@ -103,19 +103,22 @@ public class BallLauncher : MonoBehaviour
         Vector3 worldDir = (laneForward * dragDir.y + camRight * dragDir.x * dragAngleScale).normalized;
 
         _ball.linearVelocity  = worldDir * speed;
-        _ball.angularVelocity = Vector3.up * _input.SpinNormalized * spinScale * ItemEffectManager.SpinScaleMultiplier; // 스핀 아대
+        _ball.angularVelocity = Vector3.up * _input.SpinNormalized * spinScale;
 
+        // 액티브 아이템(우측 사용 버튼)을 이 공 하나에 확정시키고, "다음 투구 1번만" 적용되도록
+        // 버튼 켜짐 상태는 여기서 전부 초기화한다 - 순서가 중요: 스냅샷(Arm) 먼저, 초기화(Clear) 나중.
+        _ballItemEffects?.ArmForThrow();
+        ItemActivationManager.ClearAfterThrow();
 
         _ballResetter?.SetLaunched();
     }
 
     /// <summary>BallSpawner가 새 공 생성 후 호출 — 투구 대상 Rigidbody를 교체한다.</summary>
-    // 무거운 공/경량코팅볼 배율은 여기서 곱하지 않는다 — BallSpawner.ApplySelectedWeight()가
-    // 무게 선택이 바뀔 때마다 반복 호출되므로, 배율은 그쪽 한 곳에서만 적용해 중복 곱셈을 막는다.
     public void SetBall(Rigidbody rb)
     {
         _ball = rb;
         _ballResetter = rb != null ? rb.GetComponent<BallResetter>() : null;
+        _ballItemEffects = rb != null ? rb.GetComponent<BallItemEffects>() : null;
         if (rb != null)
             _spawnPosition = rb.position;
     }
