@@ -37,12 +37,14 @@ public class BallLauncher : MonoBehaviour
     private Vector3 _spawnPosition;
     private Camera _camera;
     private ThrowInputHandler _input;
+    private Animator _animator;
     private bool _canLaunch = true;
 
     private void Awake()
     {
         _input = GetComponent<ThrowInputHandler>();
         _camera = Camera.main;
+        _animator = GetComponent<Animator>();
     }
 
     private void Update()
@@ -84,6 +86,7 @@ public class BallLauncher : MonoBehaviour
 
         _canLaunch = false;
         _ball.isKinematic = false;
+        _animator?.SetTrigger("Throw");
 
         float speed = Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, _input.ThrowPowerNormalized);
 

@@ -28,8 +28,15 @@ public class BallMagnusEffect : MonoBehaviour
 
     private Rigidbody _rb;
     private LineRenderer _line;
+    private bool _curveDisabled;
 
     private Material _lineMaterial;
+
+    /// <summary>거터/장애물 등에 부딪힌 뒤 호출 — 이번 던지기 동안 커브를 영구히 끈다.</summary>
+    public void DisableCurve()
+    {
+        _curveDisabled = true;
+    }
 
     private void Awake()
     {
@@ -58,14 +65,12 @@ public class BallMagnusEffect : MonoBehaviour
     // 레인과 접촉 중일 때만 힘을 적용해 공중 낙하 시 간섭하지 않는다.
     private void OnCollisionStay(Collision collision)
     {
-        // 공이 굴러가는 동안 자연스럽게 생기는 X축 회전(구름 스핀)까지 angularVelocity에
-        // 섞여 있어서, 전체 벡터로 외적을 구하면 "구름 스핀 × 전진속도"가 의도치 않은
-        // 수직(Y축) 힘을 만들어내 공이 계속 튀어 오르는 문제가 있었다.
-        // 커브(훅)에 실제로 의미가 있는 건 Y축(좌우 회전) 스핀뿐이므로 그 성분만 분리해서 쓴다.
+        if (_curveDisabled) return;
+
         float curveSpin = _rb.angularVelocity.y;
 
         // 공이 무거울수록 같은 스핀이라도 궤적을 덜 휘게(관성이 크므로) 만든다.
-        // referenceMass(기본 9파운드)를 기준으로 정규화 - 기준 질량인 공은 기존과 동일하게 동작한다.
+        // referenceMass를 기준으로 정규화 - 기준 질량인 공은 기존과 동일하게 동작한다.
         float massRatio = referenceMass / Mathf.Max(_rb.mass, 0.01f);
         Vector3 force = Vector3.Cross(Vector3.up * curveSpin, _rb.linearVelocity) * magnusCoeff * massRatio
             * ItemEffectManager.CurveStrengthMultiplier; // 낡은 수건/왁스 코팅 타월

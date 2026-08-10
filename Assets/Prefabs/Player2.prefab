@@ -295,7 +295,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 55
+  m_VersionIndex: 46
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -603,7 +603,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 48
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -9275,7 +9275,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 50
+  m_VersionIndex: 41
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -9615,7 +9615,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 48
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -9670,10 +9670,10 @@ GameObject:
   m_Component:
   - component: {fileID: 269727628401702983}
   - component: {fileID: 4051232258648399677}
-  - component: {fileID: 1166573963952127621}
-  - component: {fileID: 5966037629667329895}
+  - component: {fileID: -1296392336356222020}
+  - component: {fileID: 737179883797570061}
   m_Layer: 0
-  m_Name: Player
+  m_Name: Player2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9722,7 +9722,7 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &1166573963952127621
+--- !u!114 &-1296392336356222020
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -9731,19 +9731,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 8537623599965427358}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 952b15675b3b5594cb6ff5bfd3cb1be4, type: 3}
+  m_Script: {fileID: 11500000, guid: 30c615cf097449a4bfbf869790caf0db, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ThrowInputHandler
-  backswingThresholdPx: 20
-  oscillationSpeed: 1
+  m_EditorClassIdentifier: Assembly-CSharp::TrajectoryThrowInputHandler
+  backswingThresholdPx: 40
+  oscillationSpeed: 0.6
   powerPeakPosition: 0.5
-  powerPeakHalfWidth: 0.08
+  powerPeakHalfWidth: 0.1
   forwardThresholdPx: 20
-  sampleThreshold: 8
-  spinSensitivity: 1
-  straightnessDeadZone: 0.04
-  debugForcePower99: 0
---- !u!114 &5966037629667329895
+  sampleThreshold: 6
+--- !u!114 &737179883797570061
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -9752,17 +9749,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 8537623599965427358}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ba7364d64868d741b39a711477d5a5e, type: 3}
+  m_Script: {fileID: 11500000, guid: 2d3e6202b28f4b8eb419e461c4ee22c9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BallLauncher
-  minLaunchSpeed: 7
-  maxLaunchSpeed: 20
-  armRadius: 0.5
-  spinScale: 1
-  dragAngleScale: 0.3
-  referenceMass: 7
-  weightSpeedInfluence: 0.1
-  weightSpeedFactorRange: {x: 0.85, y: 1.15}
+  m_EditorClassIdentifier: Assembly-CSharp::TrajectoryBallLauncher
+  minLaunchDistance: 4
+  maxLaunchDistance: 16
+  forwardForce: 25
+  lateralRange: 3
+  steerKp: 40
+  steerKd: 8
+  armRadius: 1.5
 --- !u!1 &8922523172297797635
 GameObject:
   m_ObjectHideFlags: 0
@@ -10058,7 +10054,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 48
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -10366,7 +10362,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 48
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
