@@ -14,6 +14,7 @@ public class BallSpawner : MonoBehaviour
     [SerializeField] private float respawnDelay = 1f;
 
     private GameObject _currentBall;
+    private Rigidbody _currentBallRb;
     private bool _subscribedToWeightSelector;
 
     private void Start()
@@ -33,6 +34,14 @@ public class BallSpawner : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null && kb.spaceKey.wasPressedThisFrame)
             ForceRespawnNow();
+
+        // 공이 아직 투구 대기 중(kinematic)일 때만 무게를 바꿀 수 있게 한다 -
+        // 던진 뒤(굴러가는 중 포함)~다음 공이 준비되기 전까지는 버튼을 잠근다.
+        if (BallWeightSelector.Instance != null)
+        {
+            bool canChangeWeight = _currentBallRb != null && _currentBallRb.isKinematic;
+            BallWeightSelector.Instance.SetInteractable(canChangeWeight);
+        }
     }
 
     /// <summary>디버그용: 대기 시간 없이 즉시 현재 공을 파괴하고 새 공을 스폰한다.</summary>
@@ -42,6 +51,7 @@ public class BallSpawner : MonoBehaviour
 
         StopAllCoroutines();
         Destroy(_currentBall);
+        _currentBallRb = null;
         inputHandler.Reset();
         SpawnBall();
     }
@@ -79,9 +89,7 @@ public class BallSpawner : MonoBehaviour
 
         var rb = ball.GetComponent<Rigidbody>();
         if (rb != null)
-            // 무게 변경은 SetBall() 이후에도 다시 일어날 수 있어(예: 무게 버튼 재선택),
-            // 상점 아이템 배율(ItemEffectManager)을 여기서도 함께 곱해줘야 SetBall()이 곱한 값이 지워지지 않는다.
-            rb.mass = BallWeightSelector.Instance.GetMassForSelected() * ItemEffectManager.BallMassMultiplier;
+            rb.mass = BallWeightSelector.Instance.GetMassForSelected();
 
         var bodyRenderer = ball.GetComponent<MeshRenderer>();
         if (bodyRenderer != null)
@@ -102,6 +110,7 @@ public class BallSpawner : MonoBehaviour
     private IEnumerator RespawnRoutine(GameObject ballToDestroy)
     {
         Destroy(ballToDestroy);
+        _currentBallRb = null;
         inputHandler.Reset();
         yield return new WaitForSeconds(respawnDelay);
         SpawnBall();
@@ -118,6 +127,7 @@ public class BallSpawner : MonoBehaviour
         _currentBall = ball;
 
         var rb = ball.GetComponent<Rigidbody>();
+        _currentBallRb = rb;
 
         // 무게 선택 UI(BallWeightSelector)가 있으면 선택된 파운드에 맞춰 질량/색을 적용한다.
         // launcher.SetBall()이 이 질량을 "기준값"으로 삼아 상점 아이템 배율을 곱하므로 반드시 그 전에 설정한다.

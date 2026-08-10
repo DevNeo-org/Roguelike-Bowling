@@ -72,6 +72,18 @@ public class BallWeightSelector : MonoBehaviour
 
     public WeightOption GetOption(int index) => weightOptions[Mathf.Clamp(index, 0, weightOptions.Length - 1)];
 
+    /// <summary>투구 중(공을 던진 뒤 다음 공이 준비되기 전)에는 무게를 바꿀 수 없도록 버튼을 잠근다.</summary>
+    public void SetInteractable(bool interactable)
+    {
+        if (weightButtons == null) return;
+
+        foreach (var btn in weightButtons)
+        {
+            if (btn != null)
+                btn.interactable = interactable;
+        }
+    }
+
     public void SelectWeight(int index)
     {
         if (index < 0 || index >= weightOptions.Length) return;
