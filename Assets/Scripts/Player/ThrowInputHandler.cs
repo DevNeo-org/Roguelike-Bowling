@@ -213,7 +213,8 @@ public class ThrowInputHandler : MonoBehaviour
         if (dist <= powerPeakHalfWidth) return 1f;
 
         float maxDist = swingPhase < powerPeakPosition ? powerPeakPosition : 1f - powerPeakPosition;
-        return 1f - Mathf.InverseLerp(powerPeakHalfWidth, maxDist, dist);
+        float power = 1f - Mathf.InverseLerp(powerPeakHalfWidth, maxDist, dist);
+        return Mathf.Max(power, ItemEffectManager.MinPowerFloor); // 미끄럼 방지 장갑: 파워 하한 보정
     }
 
     /// <summary>
@@ -222,6 +223,7 @@ public class ThrowInputHandler : MonoBehaviour
     /// </summary>
     private float ComputeSpin()
     {
+        if (ItemEffectManager.ForceStraightTrajectory) return 0f; // 스트레이트 슈즈: 곡률 입력 무시
         if (_forwardPoints.Count < 3) return 0f;
 
         Vector2 start = _forwardPoints[0];
@@ -244,7 +246,7 @@ public class ThrowInputHandler : MonoBehaviour
         }
 
         float curvatureRatio = maxSignedDeviation / chordLen;
-        if (Mathf.Abs(curvatureRatio) < straightnessDeadZone) return 0f;
+        if (Mathf.Abs(curvatureRatio) < straightnessDeadZone * ItemEffectManager.StraightnessDeadZoneMultiplier) return 0f; // 밸런스화: 손떨림 보정
 
         // 실제 공의 훅 방향(BallLauncher/BallMagnusEffect)과 부호를 맞추기 위해 반전한다.
         return Mathf.Clamp(-curvatureRatio * spinSensitivity, -1f, 1f);
