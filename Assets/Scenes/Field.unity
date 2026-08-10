@@ -13118,6 +13118,9 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 2110127267}
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4954450850484654613, guid: 7be6f65f59bf835488365e5ec37b808d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 481028603}
     - targetCorrespondingSourceObject: {fileID: 7614896580696389361, guid: 7be6f65f59bf835488365e5ec37b808d, type: 3}
       insertIndex: -1
       addedObject: {fileID: 456723468}
@@ -13132,12 +13135,30 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3294653293703040942, guid: 7be6f65f59bf835488365e5ec37b808d, type: 3}
   m_PrefabInstance: {fileID: 481028599}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 481028602}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b109e9d910c10f4b9e39ee64c73891c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageManager
+--- !u!1 &481028602 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4954450850484654613, guid: 7be6f65f59bf835488365e5ec37b808d, type: 3}
+  m_PrefabInstance: {fileID: 481028599}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &481028603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 481028602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6752a37add5d9e74abeb3a000163f119, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StageAutoStart
+  laneKey: Classic1
 --- !u!1 &483167646
 GameObject:
   m_ObjectHideFlags: 0
@@ -53941,7 +53962,6 @@ GameObject:
   - component: {fileID: 1885764592}
   - component: {fileID: 1885764594}
   - component: {fileID: 1885764595}
-  - component: {fileID: 1885764596}
   m_Layer: 0
   m_Name: BowlingScoreManager
   m_TagString: Untagged
@@ -54003,27 +54023,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PinDeckManager
   mapRootName: Map
---- !u!114 &1885764596
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1885764590}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 315e4797087fc6045886a3481d01e755, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MountainLaneProgress
-  laneCount: 5
-  framesPerLane: 2
-  laneLength: 34.1
-  transitionDuration: 0.9
-  lane1SpawnZ: 0.317
-  lane1CameraStartZ: -3
-  lane1PinFrontZ: 16
-  ballSpawner: {fileID: 970216844}
-  followCamera: {fileID: 693849674}
 --- !u!1 &1889182762 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 366d7149e406a84458aac4f26d69d3bf, type: 3}
