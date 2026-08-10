@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TutorialStep_Intro
   m_EditorClassIdentifier: Assembly-CSharp::TutorialStepData
   lines:
-  - Welcome to Roguelike Bowling!
+  - Welcome to Is This Bowling!
   - This is a bowling game controlled entirely with your mouse.
   - Every run features different lanes, obstacles, and hazards.
   - Use items and skills to aim for the highest score.

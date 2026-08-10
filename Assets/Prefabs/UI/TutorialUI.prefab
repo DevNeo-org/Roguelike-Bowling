@@ -794,7 +794,7 @@ MonoBehaviour:
   dialoguePanel: {fileID: 2055344183132029309}
   throwInputHandler: {fileID: 0}
   ballLauncher: {fileID: 0}
-  requiredMovementPx: 160
+  requiredMovementPx: 300
   steps:
   - data: {fileID: 11400000, guid: cb4ebc4fdf32ae642b59eecef2918ffc, type: 2}
     waitVisual: {fileID: 0}
