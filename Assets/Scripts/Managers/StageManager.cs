@@ -89,6 +89,30 @@ public class StageManager : MonoBehaviour
             failedMainMenuButton.onClick.AddListener(OnFailedMainMenuClicked);
     }
 
+    // 맵 진행(nextMapSceneName)으로 다음 스테이지 씬이 새로 로드되면 이 컴포넌트도 새로 생성되어
+    // StartStage()가 한 번도 호출되지 않은 상태로 시작한다 - 저장된 스테이지 번호가 있으면 자동으로
+    // 이어서 시작하고, 없으면(진짜 첫 플레이) 스테이지 1부터라도 정상 시작한다. 안 그러면
+    // currentStage/targetScore가 컴파일 기본값(1 / 0)에 그대로 머무르고, isPlaying이 계속 false라
+    // RecordThrow()도 전부 조용히 무시되어 점수가 전혀 기록되지 않는다.
+    //
+    // 이 컴포넌트의 Start()에서 자동으로 부르지 않고 StageAutoStart(각 맵 씬에 부착, 레인 키를 먼저
+    // PinDeckManager에 지정한 뒤 이 메서드를 호출한다)가 명시적으로 호출하게 한다 - Start()끼리는
+    // 서로 다른 오브젝트라 실행 순서가 보장되지 않아서, 여기서 자동으로 먼저 시작해버리면 레인 키가
+    // 세팅되기 전에 ResetPins()가 돌아 핀을 못 찾을 수 있다. MainMenuController.OnNewGameClicked()/
+    // OnLoadGameClicked()는 이 씬이 활성화되기 전에 StartFromStageOne()/StartFromSavedStage()를 이미
+    // 직접 호출해두므로, 그 경우엔 이미 stageEverStarted=true라 아래 조건에서 걸러져 "새 게임"을
+    // 덮어쓰지 않는다.
+    public void StartFromSaveOrFresh()
+    {
+        if (stageEverStarted)
+            return;
+
+        if (SaveManager.HasSaveData())
+            StartFromSavedStage();
+        else
+            StartFromStageOne();
+    }
+
     // 디버그 치트키: K를 누르면 현재 스테이지를 즉시 클리어 상태로 만들고 정비 화면으로 넘어간다.
     private void Update()
     {
@@ -168,8 +192,9 @@ public class StageManager : MonoBehaviour
         if (PinDeckManager.Instance != null)
             PinDeckManager.Instance.ResetPins();
 
+        // 실제 투구는 스페이스바가 아니라 마우스 드래그(ThrowInputHandler)라서 안내 문구를 지운다.
         if (resultText != null)
-            resultText.text = "Space 키로 공을 던져 투구하세요.";
+            resultText.text = "";
 
         if (stagePlayUI != null)
             stagePlayUI.SetActive(true);
@@ -523,6 +548,9 @@ public class StageManager : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(nextMapSceneName))
         {
+            // 새로 로드되는 씬의 StageManager는 완전히 새 컴포넌트라서 이 인스턴스의 currentStage를
+            // 그대로 못 받는다 - 다음 스테이지 번호를 저장해두면 그 씬의 Awake()가 이어서 읽어간다.
+            SaveManager.SaveStage(currentStage + 1);
             Debug.Log($"[정비 타임] 다음 맵으로 이동: {nextMapSceneName}");
             UnityEngine.SceneManagement.SceneManager.LoadScene(nextMapSceneName);
             return;

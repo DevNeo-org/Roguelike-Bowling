@@ -19,8 +19,10 @@ public class StageAutoStart : MonoBehaviour
 
         if (StageManager.Instance != null)
         {
-            StageManager.Instance.StartFromStageOne();
-            Debug.Log("[StageAutoStart] 씬 진입 시 스테이지 자동 시작");
+            // 항상 스테이지 1로 강제하면 다음 맵으로 넘어갈 때(nextMapSceneName) 저장해둔 진행
+            // 상황을 덮어써버린다 - 저장된 스테이지가 있으면 이어서, 없으면(진짜 첫 플레이) 1부터.
+            StageManager.Instance.StartFromSaveOrFresh();
+            Debug.Log("[StageAutoStart] 씬 진입 시 스테이지 자동 시작(저장된 진행 있으면 이어서)");
         }
         else
         {

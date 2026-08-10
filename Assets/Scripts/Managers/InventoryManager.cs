@@ -26,6 +26,11 @@ public class InventoryManager : MonoBehaviour
         }
 
         Instance = this;
+
+        // GoldManager와 동일한 이유 - 맵 진행으로 새 씬이 로드되면 보유 아이템 목록도 새로
+        // 생성되어 비어있는 상태로 시작한다. 저장된 목록이 있으면 그걸로 이어받는다.
+        if (SaveManager.HasSaveData())
+            LoadFromSave();
     }
 
     public bool IsOwned(string itemId)

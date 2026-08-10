@@ -6883,6 +6883,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &205921990
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7009,6 +7010,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &206191658
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -10030,7 +10032,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14f9337f845939540b00086dd294e2c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GoldManager
-  startingGold: 500
+  startingGold: 0
 --- !u!4 &367126065
 Transform:
   m_ObjectHideFlags: 0
@@ -10881,6 +10883,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &414384859
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -18311,6 +18314,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &682038700
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -25874,6 +25878,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &960251873
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -32286,6 +32291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &1134886836
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -33990,6 +33996,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &1187873554
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -43148,6 +43155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &1329422376
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -58944,6 +58952,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &1872821070
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -59250,6 +59259,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57695a2861592b24db5cb57c6e4b1838, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GutterZone
+  speedLossMultiplier: 0.9
 --- !u!23 &1875148648
 MeshRenderer:
   m_ObjectHideFlags: 0
