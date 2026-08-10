@@ -27,6 +27,8 @@ public class TutorialController : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private TMP_Text dialogueText;
+    [Tooltip("대사 텍스트와 배경을 묶은 부모 패널. waitVisual 표시 중 비활성화된다.")]
+    [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private ThrowInputHandler throwInputHandler;
     [SerializeField] private BallLauncher ballLauncher;
 
@@ -117,8 +119,15 @@ public class TutorialController : MonoBehaviour
     {
         _stepPhase = StepPhase.Waiting;
 
-        if (entry.waitVisual != null) entry.waitVisual.SetActive(true);
-        if (dialogueText != null) dialogueText.text = string.Empty;
+        if (entry.waitVisual != null)
+        {
+            entry.waitVisual.SetActive(true);
+            SetDialogueVisible(false); // 이미지 표시 중엔 대사 패널 숨김
+        }
+        else
+        {
+            if (dialogueText != null) dialogueText.text = string.Empty;
+        }
 
         switch (entry.data.condition)
         {
@@ -266,7 +275,13 @@ public class TutorialController : MonoBehaviour
 
     private void ShowLine(string line)
     {
+        SetDialogueVisible(true);
         if (dialogueText != null)
             dialogueText.text = line;
+    }
+
+    private void SetDialogueVisible(bool visible)
+    {
+        if (dialoguePanel != null) dialoguePanel.SetActive(visible);
     }
 }

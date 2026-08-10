@@ -9734,7 +9734,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 952b15675b3b5594cb6ff5bfd3cb1be4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThrowInputHandler
-  backswingThresholdPx: 10
+  backswingThresholdPx: 20
   oscillationSpeed: 1
   powerPeakPosition: 0.5
   powerPeakHalfWidth: 0.08
