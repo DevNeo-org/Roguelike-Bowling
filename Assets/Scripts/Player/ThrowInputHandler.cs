@@ -226,7 +226,7 @@ public class ThrowInputHandler : MonoBehaviour
 
     /// <summary>
     /// 앞 드래그 궤적이 시작~끝을 잇는 직선 대비 얼마나 옆으로 부풀었는지로 곡률 [-1,1]을 구한다.
-    /// 완전한 대각선 직선 드래그(부풀음 없음)는 손떨림이 있어도 데드존 이하로 걸러져 스핀 0이 된다.
+    /// 완전한 대각선 직선 드래그는 손떨림이 있어도 데드존 이하로 걸러져 스핀 0이 된다.
     /// </summary>
     private float ComputeSpin()
     {
