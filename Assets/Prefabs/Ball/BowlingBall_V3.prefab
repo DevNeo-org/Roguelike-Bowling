@@ -165,6 +165,7 @@ GameObject:
   - component: {fileID: 5353932680347612450}
   - component: {fileID: 5357005047908765449}
   - component: {fileID: 2056307085531689644}
+  - component: {fileID: 8111690595925361888}
   m_Layer: 0
   m_Name: BowlingBall_V3
   m_TagString: Untagged
@@ -325,9 +326,22 @@ MonoBehaviour:
   magnusCoeff: 0.5
   referenceMass: 7
   invertSpin: 1
-  showForwardArrow: 1
+  showForwardArrow: 0
   arrowLength: 0.2
   arrowColor: {r: 1, g: 0, b: 0, a: 1}
+--- !u!114 &8111690595925361888
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5022733497930765888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ef21c89ee324b6d98ef4a7c8c185e84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallSpinConstraint
+  yAxisDamping: 2
 --- !u!1 &5114008027130567401
 GameObject:
   m_ObjectHideFlags: 0
@@ -446,8 +460,6 @@ MonoBehaviour:
   barBackground: {fileID: 6720870931197501553}
   arrowIndicator: {fileID: 9015946379746709131}
   sweetSpotZone: {fileID: 2754337473333641797}
-  sweetSpotCenter: 0.5
-  sweetSpotHalfWidth: 0.1
 --- !u!1 &5337848683709084329
 GameObject:
   m_ObjectHideFlags: 0

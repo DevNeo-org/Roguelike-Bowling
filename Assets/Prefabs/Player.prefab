@@ -295,7 +295,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 37
+  m_VersionIndex: 46
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -603,7 +603,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 30
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -9275,7 +9275,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 32
+  m_VersionIndex: 41
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -9615,7 +9615,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 30
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -9740,7 +9740,7 @@ MonoBehaviour:
   powerPeakHalfWidth: 0.08
   forwardThresholdPx: 20
   sampleThreshold: 8
-  spinSensitivity: 3
+  spinSensitivity: 1
   straightnessDeadZone: 0.04
   debugForcePower99: 0
 --- !u!114 &5966037629667329895
@@ -9755,11 +9755,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ba7364d64868d741b39a711477d5a5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BallLauncher
-  minLaunchSpeed: 1
+  minLaunchSpeed: 5
   maxLaunchSpeed: 15
   armRadius: 0.5
-  spinScale: 8
-  dragAngleScale: 0.5
+  spinScale: 1
+  dragAngleScale: 0.3
   referenceMass: 7
   weightSpeedInfluence: 0.1
   weightSpeedFactorRange: {x: 0.85, y: 1.15}
@@ -10058,7 +10058,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 30
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -10366,7 +10366,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 30
+  m_VersionIndex: 39
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
