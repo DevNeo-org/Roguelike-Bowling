@@ -39,6 +39,10 @@ public class StageManager : MonoBehaviour
     [SerializeField] private GameObject mainMenuScreen;
     [SerializeField] private GameObject playScreen;
 
+    [Header("Map Progression (로그라이크 맵 순서)")]
+    [Tooltip("채워져 있으면, 스테이지 클리어 후 '다음 스테이지' 버튼을 눌렀을 때 같은 씬에서 스테이지 숫자만 올리는 대신 이 이름의 씬을 로드한다. 비워두면 기존 방식(같은 씬 유지) 그대로.")]
+    [SerializeField] private string nextMapSceneName;
+
     private int currentStage = 1;
     private int currentFrame = 1;
     private int stageScore;
@@ -497,6 +501,13 @@ public class StageManager : MonoBehaviour
 
     public void OnNextStageClicked()
     {
+        if (!string.IsNullOrEmpty(nextMapSceneName))
+        {
+            Debug.Log($"[정비 타임] 다음 맵으로 이동: {nextMapSceneName}");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(nextMapSceneName);
+            return;
+        }
+
         Debug.Log("[정비 타임] 다음 스테이지로 진행");
 
         if (maintenanceUI != null)
